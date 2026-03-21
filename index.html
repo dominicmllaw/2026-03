@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Tax Adviser Arena</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/student.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1 class="app-title">Tax Adviser Arena</h1>
+    <div class="group-badge" id="groupBadge" hidden>Group <span id="groupNum"></span></div>
+  </header>
+
+  <main>
+    <!-- ── Lobby Screen ── -->
+    <section id="screenLobby" class="screen active">
+      <div class="card lobby-card">
+        <h2>Welcome, Tax Advisers!</h2>
+        <p>You are government tax advisers for Hong Kong. Select your group number to begin.</p>
+        <div class="form-group">
+          <label for="groupSelect">Group Number</label>
+          <select id="groupSelect" class="input-large">
+            <option value="">Choose your group…</option>
+          </select>
+        </div>
+        <button id="btnJoin" class="btn btn-primary btn-large" disabled>Join Game</button>
+        <p class="hint" id="lobbyStatus">Waiting for the teacher to start the game…</p>
+      </div>
+    </section>
+
+    <!-- ── Waiting Screen ── -->
+    <section id="screenWaiting" class="screen">
+      <div class="card waiting-card">
+        <div class="spinner"></div>
+        <h2 id="waitingTitle">Get Ready!</h2>
+        <p id="waitingMessage">Waiting for the teacher to start the next round…</p>
+      </div>
+    </section>
+
+    <!-- ── Submission Screen ── -->
+    <section id="screenSubmit" class="screen">
+      <div class="card">
+        <div class="round-header">
+          <span class="round-badge" id="roundBadge">Round 1</span>
+          <h2 id="roundTitle">The Easy Win</h2>
+          <h3 id="roundSubtitle">Tobacco Tax</h3>
+        </div>
+
+        <!-- Scenario -->
+        <div class="scenario-box" id="scenarioBox">
+          <p id="scenarioText"></p>
+          <div class="clue-row">
+            <div class="clue demand-clue">
+              <span class="clue-icon">📊</span>
+              <p id="demandClue"></p>
+            </div>
+            <div class="clue supply-clue">
+              <span class="clue-icon">🏭</span>
+              <p id="supplyClue"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- S/D Preview -->
+        <div class="diagram-preview">
+          <canvas id="sdPreview" width="400" height="250"></canvas>
+        </div>
+
+        <!-- Target -->
+        <div class="target-box" id="targetBox">
+          <p id="targetText"></p>
+          <p id="secondaryTargetText" hidden></p>
+        </div>
+
+        <!-- Timer -->
+        <div class="timer-bar" id="timerBar" hidden>
+          <div class="timer-fill" id="timerFill"></div>
+          <span class="timer-text" id="timerText">2:00</span>
+        </div>
+
+        <!-- Tax Slider -->
+        <div class="slider-group">
+          <label for="taxSlider" id="taxSliderLabel">Set your tax rate</label>
+          <div class="slider-value-display">
+            <span id="taxValue" class="slider-value">$5.00</span>
+            <span id="taxUnit" class="slider-unit">per pack</span>
+          </div>
+          <input type="range" id="taxSlider" class="slider" min="1" max="20" step="0.5" value="5">
+          <div class="slider-range">
+            <span id="sliderMinLabel">$1</span>
+            <span id="sliderMaxLabel">$20</span>
+          </div>
+        </div>
+
+        <!-- Burden Prediction (Rounds 2-4) -->
+        <div class="slider-group" id="burdenPredictionGroup" hidden>
+          <label for="burdenSlider" id="burdenSliderLabel">Predict: what % of this tax will consumers bear?</label>
+          <div class="slider-value-display">
+            <span id="burdenValue" class="slider-value">50%</span>
+            <span class="slider-unit">consumer burden</span>
+          </div>
+          <input type="range" id="burdenSlider" class="slider slider-burden" min="0" max="100" step="5" value="50">
+          <div class="slider-range">
+            <span>0% (all on producers)</span>
+            <span>100% (all on consumers)</span>
+          </div>
+        </div>
+
+        <!-- Justification -->
+        <div class="form-group">
+          <label for="justification">Why did you choose this rate? <span class="required">(required)</span></label>
+          <textarea id="justification" class="textarea" rows="3" placeholder="We chose this rate because…" maxlength="200"></textarea>
+          <div class="char-counter"><span id="charCount">0</span>/200</div>
+        </div>
+
+        <!-- Submit -->
+        <button id="btnSubmit" class="btn btn-primary btn-large" disabled>
+          Submit Your Advice
+        </button>
+        <p class="hint" id="submitHint">Fill in the justification to unlock the submit button.</p>
+      </div>
+    </section>
+
+    <!-- ── Submitted / Waiting for Results ── -->
+    <section id="screenSubmitted" class="screen">
+      <div class="card waiting-card">
+        <div class="checkmark">✓</div>
+        <h2>Advice Submitted!</h2>
+        <p>Your answer is locked. Waiting for all groups to finish…</p>
+        <div class="submitted-summary" id="submittedSummary"></div>
+      </div>
+    </section>
+
+    <!-- ── Results Reveal ── -->
+    <section id="screenReveal" class="screen">
+      <div class="card">
+        <div class="round-header">
+          <span class="round-badge" id="revealRoundBadge">Round 1</span>
+          <h2 id="revealTitle">Results</h2>
+        </div>
+
+        <!-- Animated S/D diagram -->
+        <div class="diagram-reveal">
+          <canvas id="sdReveal" width="500" height="300"></canvas>
+        </div>
+
+        <!-- Results summary -->
+        <div class="results-grid" id="resultsGrid">
+          <div class="result-item">
+            <div class="result-label">Your Tax Rate</div>
+            <div class="result-value" id="resultTaxRate">—</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Consumer Price</div>
+            <div class="result-value" id="resultPc">—</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Producer Price</div>
+            <div class="result-value" id="resultPs">—</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">New Quantity</div>
+            <div class="result-value" id="resultQt">—</div>
+          </div>
+          <div class="result-item highlight">
+            <div class="result-label">Gov Revenue</div>
+            <div class="result-value" id="resultRevenue">—</div>
+          </div>
+          <div class="result-item" id="resultTargetItem">
+            <div class="result-label">Target</div>
+            <div class="result-value" id="resultTarget">—</div>
+          </div>
+        </div>
+
+        <!-- Burden bar -->
+        <div class="burden-section">
+          <h3>Tax Burden Split</h3>
+          <canvas id="burdenBarCanvas" height="70"></canvas>
+        </div>
+
+        <!-- Prediction accuracy (R2-4) -->
+        <div class="prediction-section" id="predictionSection" hidden>
+          <h3>Your Prediction vs Reality</h3>
+          <div class="prediction-compare">
+            <div class="prediction-item">
+              <div class="prediction-label">You predicted</div>
+              <div class="prediction-value" id="predictedBurden">—</div>
+            </div>
+            <div class="prediction-arrow">→</div>
+            <div class="prediction-item">
+              <div class="prediction-label">Actual</div>
+              <div class="prediction-value" id="actualBurden">—</div>
+            </div>
+          </div>
+          <div class="prediction-accuracy" id="predictionAccuracy"></div>
+        </div>
+
+        <!-- Score -->
+        <div class="score-section">
+          <div class="score-display">
+            <span class="score-label">Your Score</span>
+            <span class="score-value" id="roundScore">0</span>
+            <span class="score-max" id="roundScoreMax">/ 60</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Final Leaderboard ── -->
+    <section id="screenFinal" class="screen">
+      <div class="card">
+        <h2>Final Results</h2>
+        <canvas id="finalLeaderboard" height="400"></canvas>
+        <div class="final-score" id="finalScore"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/student-app.js"></script>
+</body>
+</html>

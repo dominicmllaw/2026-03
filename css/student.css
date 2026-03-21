@@ -1,0 +1,399 @@
+/* Tax Adviser Arena — Student Styles (iPad-optimised) */
+
+.app-header {
+  background: var(--primary);
+  color: white;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.group-badge {
+  background: rgba(255,255,255,0.2);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ── Screen Management ── */
+
+.screen {
+  display: none;
+  padding: 16px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.screen.active {
+  display: block;
+}
+
+/* ── Lobby ── */
+
+.lobby-card {
+  text-align: center;
+  padding: 32px 24px;
+  margin-top: 40px;
+}
+
+.lobby-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.lobby-card p {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.lobby-card .form-group {
+  text-align: left;
+  max-width: 300px;
+  margin: 0 auto 20px;
+}
+
+/* ── Waiting ── */
+
+.waiting-card {
+  text-align: center;
+  padding: 48px 24px;
+  margin-top: 60px;
+}
+
+.waiting-card h2 {
+  margin-bottom: 8px;
+}
+
+/* ── Submit Screen ── */
+
+.round-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.round-badge {
+  display: inline-block;
+  background: var(--primary);
+  color: white;
+  padding: 4px 14px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.round-header h2 {
+  font-size: 1.4rem;
+}
+
+.round-header h3 {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+.scenario-box {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.scenario-box p {
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.clue-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.clue {
+  background: white;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.85rem;
+}
+
+.clue-icon {
+  font-size: 1.2rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.demand-clue {
+  border-left: 3px solid #2563eb;
+}
+
+.supply-clue {
+  border-left: 3px solid #dc2626;
+}
+
+.diagram-preview {
+  margin-bottom: 16px;
+}
+
+.diagram-preview canvas {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  background: white;
+}
+
+.target-box {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.target-box p {
+  margin-bottom: 4px;
+}
+
+/* ── Timer ── */
+
+.timer-bar {
+  background: var(--border);
+  border-radius: 8px;
+  height: 32px;
+  position: relative;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.timer-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 8px;
+  transition: width 1s linear;
+}
+
+.timer-bar.timer-warning .timer-fill {
+  background: var(--danger);
+}
+
+.timer-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 700;
+  color: white;
+  font-size: 0.9rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* ── Submitted ── */
+
+.submitted-summary {
+  text-align: left;
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.submitted-summary p {
+  margin-bottom: 8px;
+}
+
+/* ── Results Reveal ── */
+
+.diagram-reveal {
+  margin-bottom: 16px;
+}
+
+.diagram-reveal canvas {
+  width: 100%;
+  height: 250px;
+  border-radius: 8px;
+  background: white;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.result-item {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.result-item.highlight {
+  background: #dbeafe;
+  border: 2px solid var(--primary);
+}
+
+.result-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.result-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.burden-section {
+  margin-bottom: 16px;
+}
+
+.burden-section h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.burden-section canvas {
+  width: 100%;
+  height: 70px;
+}
+
+/* ── Prediction ── */
+
+.prediction-section {
+  background: #fef3c7;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.prediction-section h3 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.prediction-compare {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.prediction-item {
+  text-align: center;
+}
+
+.prediction-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.prediction-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.prediction-arrow {
+  font-size: 1.5rem;
+  color: var(--text-muted);
+}
+
+.prediction-accuracy {
+  text-align: center;
+  font-size: 1.1rem;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+/* ── Score ── */
+
+.score-section {
+  text-align: center;
+  padding: 16px;
+}
+
+.score-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+
+.score-label {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.score-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.score-max {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* ── Final ── */
+
+#screenFinal .card {
+  text-align: center;
+  padding: 24px;
+}
+
+#screenFinal h2 {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+
+#screenFinal canvas {
+  width: 100%;
+  height: 350px;
+}
+
+.final-score {
+  margin-top: 16px;
+}
+
+.final-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 500px) {
+  .clue-row {
+    grid-template-columns: 1fr;
+  }
+  .results-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 768px) {
+  .screen {
+    padding: 24px;
+  }
+  .diagram-preview canvas {
+    height: 250px;
+  }
+  .diagram-reveal canvas {
+    height: 300px;
+  }
+}

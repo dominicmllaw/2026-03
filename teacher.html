@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tax Adviser Arena — Teacher Dashboard</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/teacher.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+</head>
+<body>
+  <header class="dashboard-header">
+    <h1>Tax Adviser Arena — Dashboard</h1>
+    <div class="header-controls">
+      <span class="phase-indicator" id="phaseIndicator">Lobby</span>
+      <button class="btn btn-danger btn-small" id="btnReset">Reset Game</button>
+    </div>
+  </header>
+
+  <div class="dashboard-layout">
+    <!-- ── Left Panel: Controls ── -->
+    <aside class="control-panel">
+      <div class="control-card">
+        <h3 id="controlRoundTitle">Game Controls</h3>
+
+        <div class="control-buttons">
+          <button class="btn btn-primary" id="btnStartRound">Start Round 1</button>
+          <button class="btn btn-warning" id="btnCloseSubmissions" disabled>Close Submissions</button>
+          <button class="btn btn-success" id="btnRevealResults" disabled>Reveal Results</button>
+          <button class="btn btn-primary" id="btnNextRound" disabled>Next Round</button>
+          <button class="btn btn-accent" id="btnEndGame" hidden>End Game</button>
+        </div>
+
+        <!-- Submission counter -->
+        <div class="submission-counter" id="submissionCounter">
+          <div class="counter-bar">
+            <div class="counter-fill" id="counterFill"></div>
+          </div>
+          <span class="counter-text" id="counterText">0 / 16 groups submitted</span>
+        </div>
+
+        <!-- Submission table -->
+        <div class="submission-table-wrap">
+          <table class="submission-table" id="submissionTable">
+            <thead>
+              <tr>
+                <th>Group</th>
+                <th>Tax Rate</th>
+                <th>Justification</th>
+              </tr>
+            </thead>
+            <tbody id="submissionTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Manual scoring -->
+      <div class="control-card" id="manualScoringCard" hidden>
+        <h3>Justification Scores (0–20)</h3>
+        <div id="manualScoringInputs"></div>
+        <button class="btn btn-small btn-success" id="btnSaveManualScores">Save Scores</button>
+      </div>
+    </aside>
+
+    <!-- ── Main Panel: Visualisations ── -->
+    <main class="viz-panel">
+      <!-- Tab switcher -->
+      <div class="tab-bar">
+        <button class="tab active" data-tab="diagram">S/D Diagram</button>
+        <button class="tab" data-tab="scatter">Scatter Plot</button>
+        <button class="tab" data-tab="leaderboard">Leaderboard</button>
+        <button class="tab" data-tab="burden">Burden Prediction</button>
+      </div>
+
+      <!-- S/D Diagram -->
+      <div class="tab-content active" id="tabDiagram">
+        <div class="diagram-container">
+          <canvas id="teacherSD" width="800" height="500"></canvas>
+        </div>
+        <div class="diagram-info" id="diagramInfo"></div>
+      </div>
+
+      <!-- Scatter Plot -->
+      <div class="tab-content" id="tabScatter">
+        <div class="chart-container">
+          <canvas id="scatterChart"></canvas>
+        </div>
+        <div class="outlier-flags" id="outlierFlags"></div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="tab-content" id="tabLeaderboard">
+        <div class="chart-container">
+          <canvas id="leaderboardChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Burden Prediction Comparison -->
+      <div class="tab-content" id="tabBurden">
+        <div class="chart-container">
+          <canvas id="burdenCompareChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Class Stats -->
+      <div class="class-stats" id="classStats" hidden>
+        <div class="stat">
+          <span class="stat-label">Avg Tax Rate</span>
+          <span class="stat-value" id="statAvgTax">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Avg Revenue</span>
+          <span class="stat-value" id="statAvgRevenue">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Avg Burden Split</span>
+          <span class="stat-value" id="statAvgBurden">—</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/teacher-app.js"></script>
+</body>
+</html>

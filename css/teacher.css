@@ -1,0 +1,313 @@
+/* Tax Adviser Arena — Teacher Dashboard Styles */
+
+.dashboard-header {
+  background: #1e293b;
+  color: white;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-header h1 {
+  font-size: 1.2rem;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.phase-indicator {
+  background: var(--primary);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ── Layout ── */
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 0;
+  height: calc(100dvh - 52px);
+}
+
+/* ── Control Panel ── */
+
+.control-panel {
+  background: white;
+  border-right: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.control-card {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.control-card h3 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.control-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.control-buttons .btn {
+  width: 100%;
+}
+
+/* ── Submission Counter ── */
+
+.submission-counter {
+  margin-bottom: 12px;
+}
+
+.counter-bar {
+  height: 24px;
+  background: var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.counter-fill {
+  height: 100%;
+  background: var(--success);
+  border-radius: 12px;
+  transition: width 0.5s ease;
+}
+
+.counter-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Submission Table ── */
+
+.submission-table-wrap {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.submission-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.submission-table th {
+  background: white;
+  position: sticky;
+  top: 0;
+  padding: 8px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.submission-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.justification-cell {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Manual Scoring ── */
+
+.manual-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.manual-score-row label {
+  font-weight: 600;
+  width: 30px;
+  font-size: 0.85rem;
+}
+
+.manual-score-input {
+  width: 70px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ── Viz Panel ── */
+
+.viz-panel {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: var(--border);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+
+.tab.active {
+  background: white;
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ── Charts ── */
+
+.diagram-container {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.diagram-container canvas {
+  width: 100%;
+  height: 450px;
+}
+
+.diagram-info {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.chart-container {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  height: 450px;
+}
+
+.chart-container canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Outlier Flags ── */
+
+.outlier-flags {
+  margin-top: 12px;
+}
+
+.outlier {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.highlight-flag {
+  background: #dbeafe;
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Class Stats ── */
+
+.class-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.stat {
+  flex: 1;
+  background: white;
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+/* ── Responsive for smaller screens ── */
+
+@media (max-width: 900px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .control-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .class-stats {
+    flex-direction: column;
+  }
+}
