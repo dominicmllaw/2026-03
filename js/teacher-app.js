@@ -40,6 +40,11 @@ function bindEvents() {
   $('btnRevealResults').addEventListener('click', doRevealResults);
   $('btnNextRound').addEventListener('click', nextRound);
   $('btnEndGame').addEventListener('click', endGame);
+  $('btnSkipTutorial').addEventListener('click', async () => {
+    await set('game/skipTutorial', true);
+    $('btnSkipTutorial').disabled = true;
+    $('btnSkipTutorial').textContent = 'Tutorial Skipped';
+  });
   $('btnReset').addEventListener('click', async () => {
     if (confirm('Reset the entire game? All data will be lost.')) {
       await resetGame();

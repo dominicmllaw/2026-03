@@ -25,10 +25,6 @@ export const FIREBASE_CONFIG = {
 //   Consumer burden share = b / (b + d)
 //   Producer burden share = d / (b + d)
 //
-// Interpretation:
-//   Larger b (steeper inverse demand) → MORE consumer burden
-//   Larger d (steeper inverse supply) → MORE producer burden
-//
 // Point elasticities at equilibrium:
 //   PED = P₀ / (b · Q₀)     — inelastic if < 1, elastic if > 1
 //   PES = P₀ / (d · Q₀)     — inelastic if < 1, elastic if > 1
@@ -38,6 +34,13 @@ export const FIREBASE_CONFIG = {
 //   PED > 1 ⟺ P₀ > a/2  (equilibrium in upper half of demand curve)
 //   PES > 1 ⟺ c > 0     (supply has positive P-intercept)
 //   PES < 1 ⟺ c < 0     (supply has positive Q-intercept)
+//
+// Issue 11: All key values are integers or clean one-decimal values.
+//   Design rule: b and d chosen so 1/b and 1/d each have ≤ 1 decimal digit.
+//   b+d chosen from {2, 2.5, 5} so 1/(b+d) is clean.
+//   b/(b+d) is a clean decimal (0.2, 0.5, 0.8, etc.).
+//   Model answer tax rate is always an integer.
+//   Slider step is $1 throughout.
 
 export const ROUNDS = [
   null, // index 0 unused (rounds are 1-indexed)
@@ -45,34 +48,47 @@ export const ROUNDS = [
   // ═══════════════════════════════════════════════════════════════
   // Round 1: Tobacco Tax — Inelastic Demand, Elastic Supply
   // ═══════════════════════════════════════════════════════════════
-  // Consumer burden = b/(b+d) = 2.0/2.5 = 80%
-  // PED at eq = P₀/(b·Q₀) = 60/(2.0×60) = 0.50  → inelastic ✓
-  // PES at eq = P₀/(d·Q₀) = 60/(0.5×60) = 2.00  → elastic ✓
-  // Equilibrium at P₀=60 < a/2=90 → lower half of D curve ✓
-  // Supply intercept c=30>0 → elastic supply ✓
+  // Pd = 130 - 4Q,  Ps = 5 + 1Q
+  // Q₀ = (130-5)/5 = 25,  P₀ = 130 - 100 = 30
+  // Consumer burden = b/(b+d) = 4/5 = 80%
+  // PED = 30/(4×25) = 0.30 → inelastic ✓
+  // PES = 30/(1×25) = 1.20 → elastic ✓
+  // P₀ = 30 < 65 = a/2 → lower half ✓ (HKDSE: PED < 1)
+  // c = 5 > 0 → elastic supply ✓
+  //
+  // Model answer t = $15:
+  //   Qt = (125-15)/5 = 22,  Pc = 130-88 = 42,  Ps = 27
+  //   Revenue = 15 × 22 = $330  ← target
+  //   Consumer price rise = $12 (80% of $15) ✓
+  //   All values are integers ✓
+  //
+  // Clean-value check: Qt shifts by 0.2/$ tax, Pc by 0.8/$, Ps by 0.2/$
+  // All one-decimal for every integer tax rate ✓
   {
     id: 1,
     title: 'The Easy Win',
     subtitle: 'Tobacco Tax',
     market: 'Cigarettes',
-    scenario: 'Hong Kong is considering an additional unit tax on cigarettes. A pack currently costs around HK$60. The government wants to raise revenue from this market.',
+    scenario: 'Hong Kong is considering an additional unit tax on cigarettes. A pack currently costs around HK$30. The government wants to raise revenue from this market.',
     demandClue: 'Research shows that most smokers find it extremely difficult to quit — cigarette demand is very unresponsive to price changes.',
     supplyClue: 'Tobacco companies can easily scale production up or down at low cost — supply is very responsive to price.',
     demandElasticity: 'inelastic',
     supplyElasticity: 'elastic',
     unit: 'HK$ per pack',
-    a: 180,    // demand intercept
-    b: 2.0,    // demand slope (large = inelastic = steep)
-    c: 30,     // supply intercept (positive = elastic supply)
-    d: 0.5,    // supply slope (small = elastic = gentle)
-    // Equilibrium: Q₀ = (180−30)/(2.0+0.5) = 60,  P₀ = 180 − 2.0×60 = 60
-    schedulePrices: [20, 40, 60, 80, 100],
+    a: 130,
+    b: 4,
+    c: 5,
+    d: 1,
+    // Equilibrium: Q₀ = 25, P₀ = $30
+    scheduleMin: 10,
+    scheduleMax: 50,
+    scheduleStep: 5,
     sliderMin: 1,
     sliderMax: 20,
-    sliderStep: 0.5,
+    sliderStep: 1,
     sliderDefault: 5,
-    revenueTarget: 300,
-    revenueTargetLabel: 'HK$300',
+    revenueTarget: 330,
+    revenueTargetLabel: 'HK$330',
     secondaryTarget: null,
     hasBurdenPrediction: false,
     timeLimit: null,
@@ -81,121 +97,159 @@ export const ROUNDS = [
   // ═══════════════════════════════════════════════════════════════
   // Round 2: Sugary Drinks Tax — Elastic Demand, Inelastic Supply
   // ═══════════════════════════════════════════════════════════════
-  // Consumer burden = b/(b+d) = 0.15/0.45 = 33%
-  // PED at eq = P₀/(b·Q₀) = 10/(0.15×53.33) = 1.25  → elastic ✓
-  // PES at eq = P₀/(d·Q₀) = 10/(0.30×53.33) = 0.63  → inelastic ✓
-  // Equilibrium at P₀=10 > a/2=9 → upper half of D curve ✓
-  // Supply intercept c=−6<0 → inelastic supply ✓
+  // Pd = 110 - 2Q,  Ps = -15 + 3Q
+  // Q₀ = (110+15)/5 = 25,  P₀ = 110 - 50 = 60
+  // Consumer burden = b/(b+d) = 2/5 = 40%
+  // PED = 60/(2×25) = 1.20 → elastic ✓
+  // PES = 60/(3×25) = 0.80 → inelastic ✓
+  // P₀ = 60 > 55 = a/2 → upper half ✓ (HKDSE: PED > 1)
+  // c = -15 < 0 → inelastic supply ✓
+  //
+  // "The Surprise": same target as R1 ($330), same optimal tax ($15),
+  // but burden is only 40% on consumers vs 80% in R1!
+  //
+  // Model answer t = $15:
+  //   Qt = (125-15)/5 = 22,  Pc = 110-44 = 66,  Ps = 51
+  //   Revenue = 15 × 22 = $330  ← same target as R1
+  //   Consumer price rise = $6 (40% of $15) ✓
+  //   All values are integers ✓
+  //
+  // Clean-value check: Qt shifts by 0.2/$ tax, Pc by 0.4/$, Ps by 0.6/$
   {
     id: 2,
     title: 'The Surprise',
     subtitle: 'Sugary Drinks Tax',
     market: 'Bottled soft drinks',
-    scenario: 'Hong Kong is considering a sugar tax on bottled soft drinks. A bottle currently costs around HK$10. The government wants to raise the same revenue target as Round 1.',
+    scenario: 'Hong Kong is considering a sugar tax on bottled soft drinks. A bottle currently costs around HK$60. The government wants to raise the same revenue target as Round 1.',
     demandClue: 'Consumers can easily switch to water, tea, or sugar-free alternatives — demand is very responsive to price changes.',
-    supplyClue: 'Bottling companies have committed to expensive factory equipment and long-term sugar contracts — it is costly to change output levels.',
+    supplyClue: 'Bottling companies have committed to expensive factory equipment and long-term sugar contracts — it is very difficult to change output levels.',
     demandElasticity: 'elastic',
-    supplyElasticity: 'inelastic',
+    supplyElasticity: 'very inelastic',
     unit: 'HK$ per bottle',
-    a: 18,
-    b: 0.15,
-    c: -6,
-    d: 0.30,
-    // Equilibrium: Q₀ = (18+6)/(0.15+0.30) = 53.33,  P₀ = 18 − 0.15×53.33 = 10
-    schedulePrices: [3, 6, 10, 13, 16],
+    a: 110,
+    b: 2,
+    c: -15,
+    d: 3,
+    // Equilibrium: Q₀ = 25, P₀ = $60
+    scheduleMin: 40,
+    scheduleMax: 80,
+    scheduleStep: 5,
     sliderMin: 1,
     sliderMax: 15,
-    sliderStep: 0.5,
-    sliderDefault: 3,
-    revenueTarget: 300,
-    revenueTargetLabel: 'HK$300',
+    sliderStep: 1,
+    sliderDefault: 5,
+    revenueTarget: 330,
+    revenueTargetLabel: 'HK$330',
     secondaryTarget: null,
     hasBurdenPrediction: true,
     timeLimit: null,
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Round 3: Plastic Bag Levy — Elastic Demand, Elastic Supply
+  // Round 3: Plastic Bag Levy — Equal Elasticities (both > 1)
   // ═══════════════════════════════════════════════════════════════
-  // Consumer burden = b/(b+d) = 0.50/1.00 = 50% — roughly even split
-  // PED at eq = P₀/(b·Q₀) = 4.5/(0.5×7) = 1.29  → elastic ✓
-  // PES at eq = P₀/(d·Q₀) = 4.5/(0.5×7) = 1.29  → elastic ✓
-  // Equilibrium at P₀=4.5 > a/2=4 → upper half of D curve ✓
-  // Supply intercept c=1>0 → elastic supply ✓
+  // Pd = 22 - 1Q,  Ps = 2 + 1Q
+  // Q₀ = (22-2)/2 = 10,  P₀ = 22 - 10 = 12
+  // Consumer burden = b/(b+d) = 1/2 = 50%
+  // PED = 12/(1×10) = 1.20 → elastic ✓
+  // PES = 12/(1×10) = 1.20 → elastic ✓
+  // b = d → exactly symmetric → exactly 50/50 burden split ✓
+  // c = 2 > 0 → elastic supply ✓
+  //
+  // "Boss Round": must hit revenue target AND keep price increase low.
+  //
+  // Model answer t = $2:
+  //   Qt = (20-2)/2 = 9,  Pc = 22-9 = 13,  Ps = 11
+  //   Revenue = 2 × 9 = $18  ← target
+  //   ΔPc = $1 ≤ $1.50 secondary target ✓
+  //   All values are integers ✓
+  //
+  // Clean-value check: Qt shifts by 0.5/$ tax, Pc by 0.5/$, Ps by 0.5/$
   {
     id: 3,
     title: 'The Boss Round',
     subtitle: 'Plastic Bag Levy',
     market: 'Plastic shopping bags',
-    scenario: 'Hong Kong wants to further increase its plastic bag levy. A bag currently has a market price of about HK$4.50. You must hit TWO targets: raise enough revenue AND keep the consumer price increase manageable.',
+    scenario: 'Hong Kong wants to further increase its plastic bag levy. A bag currently has a market price of about HK$12. You must hit TWO targets: raise enough revenue AND keep the consumer price increase manageable.',
     demandClue: 'Many shoppers already bring reusable bags — demand is quite responsive to price changes.',
     supplyClue: 'Plastic bags are extremely cheap to produce and producers can easily adjust output — supply is also very responsive.',
     demandElasticity: 'elastic',
     supplyElasticity: 'elastic',
     unit: 'HK$ per bag',
-    a: 8,
-    b: 0.50,
-    c: 1,
-    d: 0.50,
-    // Equilibrium: Q₀ = (8−1)/(0.5+0.5) = 7,  P₀ = 8 − 0.5×7 = 4.5
-    schedulePrices: [1.5, 3, 4.5, 6, 7.5],
-    sliderMin: 0.5,
+    a: 22,
+    b: 1,
+    c: 2,
+    d: 1,
+    // Equilibrium: Q₀ = 10, P₀ = $12
+    scheduleMin: 5,
+    scheduleMax: 18,
+    scheduleStep: 1,
+    sliderMin: 1,
     sliderMax: 5,
-    sliderStep: 0.25,
+    sliderStep: 1,
     sliderDefault: 1,
-    revenueTarget: 5,
-    revenueTargetLabel: 'HK$5',
+    revenueTarget: 18,
+    revenueTargetLabel: 'HK$18',
     secondaryTarget: {
       type: 'maxPriceIncrease',
-      value: 2.0,
-      label: 'Keep consumer price increase below HK$2.00',
+      value: 1.5,
+      label: 'Keep consumer price increase below HK$1.50',
     },
     hasBurdenPrediction: true,
     timeLimit: 120,
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Bonus Round: Transport Subsidy — Inelastic Demand, Very Inelastic Supply
+  // Bonus Round: Transport Subsidy — Inelastic D, Very Inelastic S
   // ═══════════════════════════════════════════════════════════════
-  // The "subsidy trap": producers capture most benefit because supply
-  // is even more inelastic than demand.
+  // Pd = 24 - 1Q,  Ps = -11 + 1.5Q
+  // Q₀ = (24+11)/2.5 = 14,  P₀ = 24 - 14 = 10
+  // Consumer benefit = b/(b+d) = 1/2.5 = 40%
+  // Producer benefit = d/(b+d) = 1.5/2.5 = 60% ← operators capture more
   //
-  // Consumer benefit = b/(b+d) = 0.30/1.00 = 30%
-  // Producer benefit = d/(b+d) = 0.70/1.00 = 70%  ← operators capture most!
+  // PED = 10/(1×14) = 0.714 → inelastic ✓
+  // PES = 10/(1.5×14) = 0.476 → very inelastic ✓
+  // P₀ = 10 < 12 = a/2 → lower half ✓ (HKDSE: PED < 1)
+  // c = -11 < 0 → inelastic supply ✓
   //
-  // PED at eq = P₀/(b·Q₀) = 5.4/(0.30×22) = 0.82  → inelastic ✓
-  // PES at eq = P₀/(d·Q₀) = 5.4/(0.70×22) = 0.35  → very inelastic ✓
-  // Equilibrium at P₀=5.4 < a/2=6 → lower half of D curve ✓
-  // Supply intercept c=−10<0 → inelastic supply ✓
+  // "The Subsidy Trap": producers capture 60% of subsidy benefit
+  // because supply is more inelastic than demand.
   //
-  // Since PES < PED (supply more inelastic), producers are the
-  // more inelastic side → they capture MORE of the subsidy benefit.
+  // Model answer s = $5 (subsidy):
+  //   Qs = (35+5)/2.5 = 16,  Pc = 24-16 = 8,  Ps = 8+5 = 13
+  //   Gov cost = 5 × 16 = $80 (exactly meets budget)
+  //   ΔQ = 2 ≥ 2 target ✓
+  //   All values are integers ✓
+  //
+  // Clean-value check: Qs shifts by 0.4/$ subsidy, Pc by 0.4/$, Ps by 0.6/$
   {
     id: 4,
     title: 'The Subsidy Trap',
     subtitle: 'Elderly Minibus Subsidy',
     market: 'Minibus fares for elderly',
-    scenario: 'The government wants to subsidise minibus fares for elderly passengers. A ride currently costs around HK$5. Set a per-ride subsidy to increase ridership. But who really benefits — the elderly or the operators?',
+    scenario: 'The government wants to subsidise minibus fares for elderly passengers. A ride currently costs around HK$10. Set a per-ride subsidy to increase ridership. But who really benefits — the elderly or the operators?',
     demandClue: 'Elderly residents rely heavily on minibuses for daily errands — they have very limited alternatives and will keep riding regardless of small price changes.',
     supplyClue: 'Minibus operators face strict licensing regulations and high fixed costs — it is very difficult to add more routes or vehicles, even when demand rises.',
     demandElasticity: 'inelastic',
     supplyElasticity: 'very inelastic',
     unit: 'HK$ per ride (subsidy)',
-    a: 12,
-    b: 0.30,
-    c: -10,
-    d: 0.70,
-    // Equilibrium: Q₀ = (12+10)/(0.30+0.70) = 22,  P₀ = 12 − 0.30×22 = 5.4
-    schedulePrices: [2, 4, 5.4, 8, 10],
-    sliderMin: 0.5,
+    a: 24,
+    b: 1,
+    c: -11,
+    d: 1.5,
+    // Equilibrium: Q₀ = 14, P₀ = $10
+    scheduleMin: 4,
+    scheduleMax: 16,
+    scheduleStep: 1,
+    sliderMin: 1,
     sliderMax: 5,
-    sliderStep: 0.25,
+    sliderStep: 1,
     sliderDefault: 2,
     revenueTarget: null,
     subsidyBudget: 80,
     subsidyBudgetLabel: 'HK$80',
-    quantityTarget: 3,
-    quantityTargetLabel: 'Increase ridership by at least 3 rides',
+    quantityTarget: 2,
+    quantityTargetLabel: 'Increase ridership by at least 2 rides',
     secondaryTarget: null,
     hasBurdenPrediction: true,
     burdenPredictionLabel: 'Who benefits more from the subsidy?',

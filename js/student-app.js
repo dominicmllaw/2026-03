@@ -16,6 +16,7 @@ let timerInterval = null;
 const $ = (id) => document.getElementById(id);
 const screens = {
   lobby: $('screenLobby'),
+  intro: $('screenIntro'),
   waiting: $('screenWaiting'),
   submit: $('screenSubmit'),
   submitted: $('screenSubmitted'),
@@ -55,6 +56,8 @@ function bindEvents() {
   });
 
   $('btnJoin').addEventListener('click', joinGame);
+  $('btnEnterWaiting').addEventListener('click', enterWaitingRoom);
+  $('practiceSlider').addEventListener('input', onPracticeSliderChange);
   $('taxSlider').addEventListener('input', onTaxSliderChange);
   $('btnSubmit').addEventListener('click', submitAnswer);
 
@@ -85,9 +88,74 @@ function joinGame() {
   $('groupBadge').hidden = false;
   $('groupNum').textContent = groupNumber;
 
+  // Show intro/tutorial screen (Issue 13)
+  showScreen('intro');
+  setupPracticeRound();
+}
+
+// ── Practice Round (Issue 13) ──
+const PRACTICE_CONFIG = { a: 100, b: 1, c: 0, d: 1 };
+// Equilibrium: Q₀ = 100/2 = 50, P₀ = 100 - 50 = 50
+
+function setupPracticeRound() {
+  drawSDDiagram($('practiceSD'), PRACTICE_CONFIG, 0, {});
+  renderScheduleTable(
+    $('practiceScheduleBody'),
+    generateSchedule({ ...PRACTICE_CONFIG, schedulePrices: null }, 0),
+    false
+  );
+  $('practiceValue').textContent = '$0';
+  $('practiceResults').innerHTML = '<p>Move the slider to see how a tax affects the market.</p>';
+}
+
+function onPracticeSliderChange() {
+  const t = parseInt($('practiceSlider').value);
+  $('practiceValue').textContent = `$${t}`;
+
+  drawSDDiagram($('practiceSD'), PRACTICE_CONFIG, t, {
+    showShift: t > 0,
+    showRevenue: t > 0,
+    showBurden: t > 0,
+    showLabels: t > 0,
+  });
+
+  if (t > 0) {
+    const result = simulate(PRACTICE_CONFIG, t);
+    const schedRows = generateSchedule({ ...PRACTICE_CONFIG, schedulePrices: null }, t);
+    $('practiceScheduleHead').innerHTML = '<tr><th>P ($)</th><th>Qd</th><th>Qs</th><th>Qs after tax</th></tr>';
+    renderScheduleTable($('practiceScheduleBody'), schedRows, true);
+    $('practiceResults').innerHTML = `
+      <div class="practice-result-grid">
+        <div><strong>Consumer price:</strong> $${result.newEquilibrium.Pc}</div>
+        <div><strong>Producer price:</strong> $${result.newEquilibrium.Ps}</div>
+        <div><strong>New quantity:</strong> ${result.newEquilibrium.Q} units</div>
+        <div><strong>Tax revenue:</strong> $${result.revenue}</div>
+        <div><strong>Consumer burden:</strong> ${result.consumerBurdenPct}%</div>
+        <div><strong>Producer burden:</strong> ${result.producerBurdenPct}%</div>
+      </div>
+    `;
+  } else {
+    $('practiceScheduleHead').innerHTML = '<tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th></tr>';
+    renderScheduleTable(
+      $('practiceScheduleBody'),
+      generateSchedule({ ...PRACTICE_CONFIG, schedulePrices: null }, 0),
+      false
+    );
+    $('practiceResults').innerHTML = '<p>Move the slider to see how a tax affects the market.</p>';
+  }
+}
+
+function enterWaitingRoom() {
   showScreen('waiting');
   $('waitingTitle').textContent = 'You\'re In!';
   $('waitingMessage').textContent = 'Waiting for the teacher to start Round 1…';
+}
+
+// Called when teacher clicks "Skip Tutorial" — jumps to waiting
+function skipToWaiting() {
+  if (screens.intro.classList.contains('active')) {
+    enterWaitingRoom();
+  }
 }
 
 // ── Game State Polling ──
@@ -96,6 +164,9 @@ function pollGameState() {
     if (!state) return;
     const newRound = state.currentRound || 0;
     const newPhase = state.phase || PHASE.LOBBY;
+
+    // Issue 13: teacher skip tutorial
+    if (state.skipTutorial) skipToWaiting();
 
     if (newRound !== currentRound || newPhase !== currentPhase) {
       currentRound = newRound;
@@ -109,6 +180,8 @@ function pollGameState() {
     if (!state) return;
     const newRound = state.currentRound || 0;
     const newPhase = state.phase || PHASE.LOBBY;
+
+    if (state.skipTutorial) skipToWaiting();
 
     if (newRound !== currentRound || newPhase !== currentPhase) {
       currentRound = newRound;
