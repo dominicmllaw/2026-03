@@ -46,7 +46,7 @@
             <thead>
               <tr>
                 <th>Group</th>
-                <th>Tax Rate</th>
+                <th>Rate</th>
                 <th>Justification</th>
               </tr>
             </thead>
@@ -55,10 +55,11 @@
         </div>
       </div>
 
-      <!-- Manual scoring -->
-      <div class="control-card" id="manualScoringCard" hidden>
-        <h3>Justification Scores (0–20)</h3>
-        <div id="manualScoringInputs"></div>
+      <!-- Justification scoring (Issue 8) — 0/10/20 buttons per group -->
+      <div class="control-card" id="scoringCard" hidden>
+        <h3>Justification Scores</h3>
+        <p class="scoring-hint">Click 0, 10, or 20 for each group. Click justification to expand.</p>
+        <div id="scoringRows"></div>
         <button class="btn btn-small btn-success" id="btnSaveManualScores">Save Scores</button>
       </div>
     </aside>
@@ -73,11 +74,51 @@
         <button class="tab" data-tab="burden">Burden Prediction</button>
       </div>
 
-      <!-- S/D Diagram -->
+      <!-- S/D Diagram tab (Issue 1 + Issue 5: model answer + per-group viewer) -->
       <div class="tab-content active" id="tabDiagram">
-        <div class="diagram-container">
-          <canvas id="teacherSD" width="800" height="500"></canvas>
+        <!-- Group selector (Issue 5) -->
+        <div class="group-selector-bar" id="groupSelectorBar" hidden>
+          <label for="groupViewSelect">View:</label>
+          <select id="groupViewSelect" class="group-view-select">
+            <option value="model">Model Answer</option>
+          </select>
         </div>
+
+        <div class="diagram-and-data">
+          <!-- Diagram -->
+          <div class="diagram-container">
+            <canvas id="teacherSD" width="800" height="500"></canvas>
+          </div>
+
+          <!-- Data table beside diagram (Issue 5C) -->
+          <div class="data-table-panel" id="dataTablePanel" hidden>
+            <h4 id="dataTableTitle">Model Answer</h4>
+            <table class="data-table" id="dataTable">
+              <tbody id="dataTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Schedule tables (Issue 2) -->
+        <div class="schedule-pair" id="teacherScheduleSection" hidden>
+          <div class="schedule-half">
+            <h4>Before Tax/Subsidy</h4>
+            <table class="schedule-table">
+              <thead><tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th></tr></thead>
+              <tbody id="teacherScheduleBeforeBody"></tbody>
+            </table>
+          </div>
+          <div class="schedule-half">
+            <h4 id="teacherScheduleAfterTitle">After Tax/Subsidy</h4>
+            <table class="schedule-table" id="teacherScheduleAfterTable">
+              <thead id="teacherScheduleAfterHead">
+                <tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th><th>Qs after tax (units)</th></tr>
+              </thead>
+              <tbody id="teacherScheduleAfterBody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="diagram-info" id="diagramInfo"></div>
       </div>
 
@@ -114,7 +155,7 @@
           <span class="stat-value" id="statAvgRevenue">—</span>
         </div>
         <div class="stat">
-          <span class="stat-label">Avg Burden Split</span>
+          <span class="stat-label">Burden Split</span>
           <span class="stat-value" id="statAvgBurden">—</span>
         </div>
       </div>

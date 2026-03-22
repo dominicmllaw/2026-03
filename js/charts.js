@@ -11,7 +11,7 @@ import { generateCurvePoints, simulate } from './simulation.js';
  * @param {HTMLCanvasElement} canvas
  * @param {Object} roundConfig - { a, b, c, d, ... }
  * @param {number} taxRate - 0 for original, non-zero for shifted
- * @param {Object} options - { animate, showRevenue, showBurden, showLabels }
+ * @param {Object} options - { animate, showRevenue, showBurden, showLabels, isSubsidy }
  */
 export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
   const ctx = canvas.getContext('2d');
@@ -32,15 +32,15 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
   const Pc = a - b * Qt;
   const Ps = Pc - taxRate;
 
-  // Chart area with margins
-  const margin = { top: 30, right: 30, bottom: 50, left: 55 };
+  // Chart area with margins (extra space for tick labels)
+  const margin = { top: 30, right: 30, bottom: 55, left: 65 };
   const cw = w - margin.left - margin.right;
   const ch = h - margin.top - margin.bottom;
 
   // Scale ranges
   const qMax = Q0 * 1.6;
   const pMax = Math.max(a, c + d * qMax, a + Math.abs(taxRate)) * 1.1;
-  const pMin = Math.min(0, c - Math.abs(taxRate) * 0.5);
+  const pMin = 0; // always start from 0
   const pRange = pMax - pMin;
 
   const scaleX = (q) => margin.left + (q / qMax) * cw;
@@ -51,6 +51,29 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, w, h);
 
+  // ── Grid and tick marks ──
+  const xTicks = niceTicks(0, qMax, 5);
+  const yTicks = niceTicks(pMin, pMax, 5);
+
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 0.5;
+  // Horizontal grid lines
+  yTicks.forEach(p => {
+    const y = scaleY(p);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, y);
+    ctx.lineTo(margin.left + cw, y);
+    ctx.stroke();
+  });
+  // Vertical grid lines
+  xTicks.forEach(q => {
+    const x = scaleX(q);
+    ctx.beginPath();
+    ctx.moveTo(x, margin.top);
+    ctx.lineTo(x, margin.top + ch);
+    ctx.stroke();
+  });
+
   // Axes
   ctx.strokeStyle = '#94a3b8';
   ctx.lineWidth = 1.5;
@@ -60,15 +83,39 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
   ctx.lineTo(margin.left + cw, margin.top + ch);
   ctx.stroke();
 
-  // Axis labels
-  ctx.fillStyle = COLOURS.text;
-  ctx.font = 'bold 14px -apple-system, sans-serif';
+  // Tick marks and labels on Y axis
+  ctx.fillStyle = COLOURS.textMuted;
+  ctx.font = '11px -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  yTicks.forEach(p => {
+    const y = scaleY(p);
+    ctx.beginPath();
+    ctx.moveTo(margin.left - 4, y);
+    ctx.lineTo(margin.left, y);
+    ctx.stroke();
+    ctx.fillText(formatNum(p), margin.left - 7, y + 4);
+  });
+
+  // Tick marks and labels on X axis
   ctx.textAlign = 'center';
-  ctx.fillText('Quantity', margin.left + cw / 2, h - 8);
+  xTicks.forEach(q => {
+    const x = scaleX(q);
+    ctx.beginPath();
+    ctx.moveTo(x, margin.top + ch);
+    ctx.lineTo(x, margin.top + ch + 4);
+    ctx.stroke();
+    ctx.fillText(formatNum(q), x, margin.top + ch + 16);
+  });
+
+  // Axis labels with units (Issue 3)
+  ctx.fillStyle = COLOURS.text;
+  ctx.font = 'bold 13px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Q (units)', margin.left + cw / 2, h - 5);
   ctx.save();
-  ctx.translate(15, margin.top + ch / 2);
+  ctx.translate(14, margin.top + ch / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillText('Price', 0, 0);
+  ctx.fillText('P ($)', 0, 0);
   ctx.restore();
 
   // ── Revenue rectangle (if showing) ──
@@ -81,14 +128,28 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
     ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
   }
 
-  // ── Burden shading ──
+  // ── Burden / benefit shading ──
   if (showShift && options.showBurden && Qt > 0) {
-    // Consumer burden (above P0, below Pc)
-    ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
-    ctx.fillRect(scaleX(0), scaleY(Pc), scaleX(Qt) - scaleX(0), scaleY(P0) - scaleY(Pc));
-    // Producer burden (above Ps, below P0)
-    ctx.fillStyle = 'rgba(139, 92, 246, 0.25)';
-    ctx.fillRect(scaleX(0), scaleY(P0), scaleX(Qt) - scaleX(0), scaleY(Ps) - scaleY(P0));
+    const isSubsidy = options.isSubsidy || roundConfig.isSubsidy;
+    // For tax: consumer burden (P0→Pc above), producer burden (Ps→P0 below)
+    // For subsidy: consumer benefit (Pc→P0, Pc<P0), producer benefit (P0→Ps, Ps>P0)
+    // Visually the areas are the same rectangles either way
+    if (taxRate > 0) {
+      // Consumer burden (above P0, below Pc)
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
+      ctx.fillRect(scaleX(0), scaleY(Pc), scaleX(Qt) - scaleX(0), scaleY(P0) - scaleY(Pc));
+      // Producer burden (above Ps, below P0)
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.25)';
+      ctx.fillRect(scaleX(0), scaleY(P0), scaleX(Qt) - scaleX(0), scaleY(Ps) - scaleY(P0));
+    } else {
+      // Subsidy: Pc < P0 < Ps
+      // Consumer benefit (above Pc, below P0)
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
+      ctx.fillRect(scaleX(0), scaleY(P0), scaleX(Qt) - scaleX(0), scaleY(Pc) - scaleY(P0));
+      // Producer benefit (above P0, below Ps)
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.25)';
+      ctx.fillRect(scaleX(0), scaleY(Ps), scaleX(Qt) - scaleX(0), scaleY(P0) - scaleY(Ps));
+    }
   }
 
   // ── Draw curves ──
@@ -142,14 +203,49 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
     }
   }
 
-  // Original equilibrium
-  drawEquilibriumPoint(Q0, P0, '#1e293b', 'E₀');
+  // Original equilibrium with coordinates (Issue 3)
+  const eqLabel = options.showLabels
+    ? `E\u2080 (${formatNum(Q0)}, ${formatNum(P0)})`
+    : 'E\u2080';
+  drawEquilibriumPoint(Q0, P0, '#1e293b', eqLabel);
 
   if (showShift && Qt > 0) {
-    // New consumer price point (on demand curve)
-    drawEquilibriumPoint(Qt, Pc, COLOURS.consumerBurden, options.showLabels ? `Pc=${Pc.toFixed(1)}` : 'Pc');
-    // New producer price point
-    drawEquilibriumPoint(Qt, Ps, COLOURS.producerBurden, options.showLabels ? `Ps=${Ps.toFixed(1)}` : 'Ps');
+    const pcLabel = options.showLabels
+      ? `Pc=$${Pc.toFixed(1)}`
+      : 'Pc';
+    const psLabel = options.showLabels
+      ? `Ps=$${Ps.toFixed(1)}`
+      : 'Ps';
+    drawEquilibriumPoint(Qt, Pc, COLOURS.consumerBurden, pcLabel);
+    drawEquilibriumPoint(Qt, Ps, COLOURS.producerBurden, psLabel);
+
+    // Tax wedge bracket
+    if (options.showLabels) {
+      const xWedge = scaleX(Qt) + 40;
+      const yTop = scaleY(Pc);
+      const yBot = scaleY(Ps);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xWedge - 5, yTop);
+      ctx.lineTo(xWedge, yTop);
+      ctx.lineTo(xWedge, yBot);
+      ctx.lineTo(xWedge - 5, yBot);
+      ctx.stroke();
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      const wedgeLabel = roundConfig.isSubsidy ? 'subsidy' : 'tax';
+      ctx.fillText(`${wedgeLabel}=$${Math.abs(taxRate).toFixed(1)}`, xWedge + 4, (yTop + yBot) / 2 + 4);
+    }
+
+    // New equilibrium label with coordinates
+    if (options.showLabels) {
+      ctx.fillStyle = COLOURS.supplyShifted;
+      ctx.font = 'bold 12px -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`E\u2081 (${formatNum(Qt)}, ${formatNum(Pc)})`, scaleX(Qt) + 8, scaleY(Pc) + 18);
+    }
   }
 
   // Curve labels
@@ -168,20 +264,36 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
   if (showShift && curves.supplyShifted.length > 0) {
     const ssEnd = curves.supplyShifted[curves.supplyShifted.length - 1];
     ctx.fillStyle = COLOURS.supplyShifted;
-    ctx.fillText(taxRate > 0 ? 'S + tax' : 'S − sub', scaleX(ssEnd.x) + 5, scaleY(ssEnd.y));
+    ctx.fillText(taxRate > 0 ? 'S + tax' : 'S \u2212 sub', scaleX(ssEnd.x) + 5, scaleY(ssEnd.y));
   }
+}
 
-  // Price axis values
-  ctx.fillStyle = COLOURS.textMuted;
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.textAlign = 'right';
-  if (options.showLabels) {
-    ctx.fillText(P0.toFixed(1), margin.left - 5, scaleY(P0) + 4);
-    ctx.fillText(Q0.toFixed(1), scaleX(Q0), margin.top + ch + 15);
-    if (showShift && Qt > 0) {
-      ctx.fillText(Qt.toFixed(1), scaleX(Qt), margin.top + ch + 15);
-    }
+// ── Nice tick computation ──
+
+function niceTicks(min, max, targetCount) {
+  const range = max - min;
+  if (range <= 0) return [min];
+  const roughStep = range / targetCount;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const residual = roughStep / magnitude;
+  let step;
+  if (residual <= 1.5) step = magnitude;
+  else if (residual <= 3.5) step = 2 * magnitude;
+  else if (residual <= 7.5) step = 5 * magnitude;
+  else step = 10 * magnitude;
+
+  const ticks = [];
+  const start = Math.ceil(min / step) * step;
+  for (let t = start; t <= max + step * 0.01; t += step) {
+    ticks.push(Math.round(t * 100) / 100);
   }
+  return ticks;
+}
+
+function formatNum(n) {
+  if (Number.isInteger(n)) return n.toString();
+  if (Math.abs(n - Math.round(n)) < 0.01) return Math.round(n).toString();
+  return n.toFixed(1);
 }
 
 // ── Chart.js Wrappers ──
@@ -192,9 +304,6 @@ let burdenChart = null;
 
 /**
  * Render a scatter plot of group results.
- * @param {HTMLCanvasElement} canvas
- * @param {Array} data - [{ group, x, y }]
- * @param {Object} options - { xLabel, yLabel, targetX, targetY }
  */
 export function renderScatterPlot(canvas, data, options = {}) {
   if (scatterChart) scatterChart.destroy();
@@ -222,7 +331,6 @@ export function renderScatterPlot(canvas, data, options = {}) {
             }
           }
         },
-        // Data labels plugin (if available)
         datalabels: {
           display: true,
           formatter: (value, ctx) => `G${data[ctx.dataIndex].group}`,
@@ -252,25 +360,11 @@ export function renderScatterPlot(canvas, data, options = {}) {
     plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : [],
   });
 
-  // Draw target lines if provided
-  if (options.targetX != null || options.targetY != null) {
-    const annotation = {
-      type: 'line',
-      borderColor: COLOURS.danger,
-      borderWidth: 2,
-      borderDash: [6, 4],
-    };
-    // We'll add annotations via plugin if available
-  }
-
   return scatterChart;
 }
 
 /**
  * Render the leaderboard as a horizontal bar chart.
- * @param {HTMLCanvasElement} canvas
- * @param {Array} leaderboard - sorted [{ group, total, rounds }]
- * @param {number} maxShow - max groups to show (default 8)
  */
 export function renderLeaderboard(canvas, leaderboard, maxShow = 8) {
   if (leaderboardChart) leaderboardChart.destroy();
@@ -278,7 +372,6 @@ export function renderLeaderboard(canvas, leaderboard, maxShow = 8) {
   const shown = leaderboard.slice(0, maxShow);
   const labels = shown.map(e => `Group ${e.group}`);
 
-  // Stack by round
   const roundKeys = ['1', '2', '3', '4'];
   const roundColours = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6'];
   const roundLabels = ['R1: Tobacco', 'R2: Drinks', 'R3: Bags', 'R4: Subsidy'];
@@ -315,8 +408,6 @@ export function renderLeaderboard(canvas, leaderboard, maxShow = 8) {
 
 /**
  * Render burden prediction comparison (grouped bar).
- * @param {HTMLCanvasElement} canvas
- * @param {Array} data - [{ group, predicted, actual }]
  */
 export function renderBurdenComparison(canvas, data) {
   if (burdenChart) burdenChart.destroy();
@@ -360,11 +451,12 @@ export function renderBurdenComparison(canvas, data) {
 }
 
 /**
- * Draw a simple burden split bar (horizontal stacked bar, single row).
+ * Draw a simple burden/benefit split bar (horizontal stacked bar, single row).
  * @param {HTMLCanvasElement} canvas
- * @param {number} consumerPct - consumer burden percentage
+ * @param {number} consumerPct - consumer burden/benefit percentage
+ * @param {boolean} isSubsidy - use "benefit" labels instead of "burden"
  */
-export function drawBurdenBar(canvas, consumerPct) {
+export function drawBurdenBar(canvas, consumerPct, isSubsidy = false) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth;
@@ -378,6 +470,9 @@ export function drawBurdenBar(canvas, consumerPct) {
   const consumerW = (consumerPct / 100) * w;
   const producerPct = 100 - consumerPct;
 
+  const consumerLabel = isSubsidy ? 'Consumer benefit' : 'Consumer burden';
+  const producerLabel = isSubsidy ? 'Producer benefit' : 'Producer burden';
+
   // Consumer portion
   ctx.fillStyle = COLOURS.consumerBurden;
   ctx.fillRect(0, barY, consumerW, barH);
@@ -388,18 +483,18 @@ export function drawBurdenBar(canvas, consumerPct) {
 
   // Labels
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 14px -apple-system, sans-serif';
+  ctx.font = 'bold 13px -apple-system, sans-serif';
   ctx.textAlign = 'center';
-  if (consumerPct > 15) {
-    ctx.fillText(`Consumer ${consumerPct}%`, consumerW / 2, barY + barH / 2 + 5);
+  if (consumerPct > 20) {
+    ctx.fillText(`${consumerLabel} ${consumerPct}%`, consumerW / 2, barY + barH / 2 + 5);
   }
-  if (producerPct > 15) {
-    ctx.fillText(`Producer ${producerPct}%`, consumerW + (w - consumerW) / 2, barY + barH / 2 + 5);
+  if (producerPct > 20) {
+    ctx.fillText(`${producerLabel} ${producerPct}%`, consumerW + (w - consumerW) / 2, barY + barH / 2 + 5);
   }
 
   // Top label
   ctx.fillStyle = COLOURS.text;
   ctx.font = '11px -apple-system, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('Burden Split', 0, 10);
+  ctx.fillText(isSubsidy ? 'Benefit Split' : 'Burden Split', 0, 10);
 }

@@ -199,6 +199,56 @@
   text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
+/* ── Structured Justification (Issue 7) ── */
+
+.justification-structured {
+  margin-bottom: 20px;
+}
+
+.justification-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.justification-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.just-dropdown {
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: white;
+  color: var(--text);
+  min-height: 40px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
+
+.just-dropdown:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.just-dropdown-wide {
+  width: 100%;
+  margin-top: 4px;
+}
+
 /* ── Submitted ── */
 
 .submitted-summary {
@@ -215,6 +265,40 @@
 }
 
 /* ── Results Reveal ── */
+
+/* Model answer banner (Issue 1) */
+.model-answer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: #f0fdf4;
+  border: 2px solid var(--success);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.model-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.model-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--success);
+}
+
+.model-value.yours {
+  color: var(--primary);
+}
+
+.model-separator {
+  color: var(--text-muted);
+}
 
 .diagram-reveal {
   margin-bottom: 16px;

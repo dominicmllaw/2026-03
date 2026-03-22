@@ -72,6 +72,15 @@
           <canvas id="sdPreview" width="400" height="250"></canvas>
         </div>
 
+        <!-- Schedule table (before tax) -->
+        <div class="schedule-section" id="scheduleBeforeSection">
+          <h4>Demand &amp; Supply Schedule</h4>
+          <table class="schedule-table" id="scheduleBeforeTable">
+            <thead><tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th></tr></thead>
+            <tbody id="scheduleBeforeBody"></tbody>
+          </table>
+        </div>
+
         <!-- Target -->
         <div class="target-box" id="targetBox">
           <p id="targetText"></p>
@@ -103,7 +112,7 @@
           <label for="burdenSlider" id="burdenSliderLabel">Predict: what % of this tax will consumers bear?</label>
           <div class="slider-value-display">
             <span id="burdenValue" class="slider-value">50%</span>
-            <span class="slider-unit">consumer burden</span>
+            <span id="burdenUnit" class="slider-unit">consumer burden</span>
           </div>
           <input type="range" id="burdenSlider" class="slider slider-burden" min="0" max="100" step="5" value="50">
           <div class="slider-range">
@@ -112,18 +121,40 @@
           </div>
         </div>
 
-        <!-- Justification -->
-        <div class="form-group">
-          <label for="justification">Why did you choose this rate? <span class="required">(required)</span></label>
-          <textarea id="justification" class="textarea" rows="3" placeholder="We chose this rate because…" maxlength="200"></textarea>
-          <div class="char-counter"><span id="charCount">0</span>/200</div>
+        <!-- Structured Justification (Issue 7) -->
+        <div class="justification-structured" id="justificationSection">
+          <label class="justification-label">Justify your choice <span class="required">(required — select both dropdowns)</span></label>
+          <div class="justification-row">
+            <span>We set a </span>
+            <select id="justDropdownA" class="just-dropdown">
+              <option value="">— select —</option>
+              <option value="high">high</option>
+              <option value="moderate">moderate</option>
+              <option value="low">low</option>
+            </select>
+            <span id="justTaxWord"> tax</span><span>...</span>
+          </div>
+          <div class="justification-row">
+            <span>...because </span>
+            <select id="justDropdownB" class="just-dropdown just-dropdown-wide">
+              <option value="">— select —</option>
+              <option value="demand_more_elastic">demand is more elastic than supply</option>
+              <option value="demand_less_elastic">demand is less elastic than supply</option>
+              <option value="roughly_equal">the elasticity of demand roughly equals that of supply</option>
+            </select>
+            <span>.</span>
+          </div>
+          <div class="form-group" style="margin-top: 12px">
+            <label for="justElaboration">Explain further (optional):</label>
+            <textarea id="justElaboration" class="textarea" rows="2" placeholder="Optional extra explanation…" maxlength="200"></textarea>
+          </div>
         </div>
 
         <!-- Submit -->
         <button id="btnSubmit" class="btn btn-primary btn-large" disabled>
           Submit Your Advice
         </button>
-        <p class="hint" id="submitHint">Fill in the justification to unlock the submit button.</p>
+        <p class="hint" id="submitHint">Select both dropdowns above to unlock the submit button.</p>
       </div>
     </section>
 
@@ -145,15 +176,35 @@
           <h2 id="revealTitle">Results</h2>
         </div>
 
+        <!-- Model answer comparison (Issue 1) -->
+        <div class="model-answer-banner" id="modelAnswerBanner">
+          <span class="model-label">Optimal rate was</span>
+          <span class="model-value" id="modelOptimalRate">—</span>
+          <span class="model-separator">—</span>
+          <span class="model-label">Your rate was</span>
+          <span class="model-value yours" id="yourRate">—</span>
+        </div>
+
         <!-- Animated S/D diagram -->
         <div class="diagram-reveal">
           <canvas id="sdReveal" width="500" height="300"></canvas>
         </div>
 
+        <!-- Schedule table (after tax/subsidy) -->
+        <div class="schedule-section" id="scheduleAfterSection">
+          <h4 id="scheduleAfterTitle">After Tax: Demand &amp; Supply Schedule</h4>
+          <table class="schedule-table" id="scheduleAfterTable">
+            <thead id="scheduleAfterHead">
+              <tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th><th>Qs after tax (units)</th></tr>
+            </thead>
+            <tbody id="scheduleAfterBody"></tbody>
+          </table>
+        </div>
+
         <!-- Results summary -->
         <div class="results-grid" id="resultsGrid">
           <div class="result-item">
-            <div class="result-label">Your Tax Rate</div>
+            <div class="result-label" id="resultTaxRateLabel">Your Tax Rate</div>
             <div class="result-value" id="resultTaxRate">—</div>
           </div>
           <div class="result-item">
@@ -169,7 +220,7 @@
             <div class="result-value" id="resultQt">—</div>
           </div>
           <div class="result-item highlight">
-            <div class="result-label">Gov Revenue</div>
+            <div class="result-label" id="resultRevenueLabel">Gov Revenue</div>
             <div class="result-value" id="resultRevenue">—</div>
           </div>
           <div class="result-item" id="resultTargetItem">
@@ -178,9 +229,9 @@
           </div>
         </div>
 
-        <!-- Burden bar -->
+        <!-- Burden / Benefit bar -->
         <div class="burden-section">
-          <h3>Tax Burden Split</h3>
+          <h3 id="burdenSectionTitle">Tax Burden Split</h3>
           <canvas id="burdenBarCanvas" height="70"></canvas>
         </div>
 

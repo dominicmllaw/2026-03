@@ -240,6 +240,52 @@ select {
   margin-top: 4px;
 }
 
+/* ── Schedule Tables (Issue 2) ── */
+
+.schedule-section {
+  margin-bottom: 16px;
+}
+
+.schedule-section h4 {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.schedule-table th {
+  background: var(--bg);
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border);
+}
+
+.schedule-table td {
+  padding: 6px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.schedule-table .eq-row {
+  background: #dbeafe;
+  font-weight: 700;
+}
+
+.schedule-table .new-eq-row {
+  background: #dcfce7;
+  font-weight: 700;
+  border: 2px solid var(--success);
+}
+
 /* ── Misc ── */
 
 .hint {
