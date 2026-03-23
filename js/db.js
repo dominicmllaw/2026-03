@@ -44,6 +44,7 @@ export async function set(path, value) {
     await ref.set(value);
   } else {
     const key = LS_PREFIX + path.replace(/\//g, '.');
+    console.log('[DB] set() — path:', path, '→ key:', key, '→ value:', value);
     localStorage.setItem(key, JSON.stringify(value));
 
     // If this is a child path (e.g. 'game/tutorialSlide'), merge the value
@@ -164,6 +165,7 @@ export async function resetGame() {
 // ── Internal helpers ──
 
 function notifyListeners(path, value) {
+  console.log('[DB] notifyListeners — path:', path, 'listeners:', [...listeners.keys()]);
   // Notify exact path listeners
   if (listeners.has(path)) {
     listeners.get(path).forEach(cb => cb(value));
@@ -182,7 +184,20 @@ function notifyListeners(path, value) {
 }
 
 function startLocalStoragePoll() {
-  // Poll every 500ms for localStorage changes (cross-tab)
+  // Primary: use the native 'storage' event for instant cross-tab sync.
+  // The 'storage' event fires in OTHER tabs when localStorage changes.
+  window.addEventListener('storage', (e) => {
+    if (!e.key || !e.key.startsWith(LS_PREFIX)) return;
+    const path = e.key.slice(LS_PREFIX.length).replace(/\./g, '/');
+    let value = null;
+    if (e.newValue !== null) {
+      try { value = JSON.parse(e.newValue); } catch { return; }
+    }
+    console.log('[DB] storage event — path:', path, 'value:', value);
+    notifyListeners(path, value);
+  });
+
+  // Fallback: poll every 2s in case storage events are missed
   let lastSnapshot = getLocalStorageSnapshot();
   pollInterval = setInterval(() => {
     const current = getLocalStorageSnapshot();
@@ -202,7 +217,7 @@ function startLocalStoragePoll() {
       }
     }
     lastSnapshot = current;
-  }, 500);
+  }, 2000);
 }
 
 function getLocalStorageSnapshot() {
