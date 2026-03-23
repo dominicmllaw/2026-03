@@ -45,6 +45,31 @@ export async function set(path, value) {
   } else {
     const key = LS_PREFIX + path.replace(/\//g, '.');
     localStorage.setItem(key, JSON.stringify(value));
+
+    // If this is a child path (e.g. 'game/tutorialSlide'), merge the value
+    // into the parent object stored at the root key (e.g. 'taa_game') so that
+    // get('game') and onValue('game', ...) see the change.
+    const parts = path.split('/');
+    if (parts.length > 1) {
+      const rootKey = LS_PREFIX + parts[0];
+      const raw = localStorage.getItem(rootKey);
+      let rootObj;
+      try { rootObj = raw ? JSON.parse(raw) : {}; } catch { rootObj = {}; }
+      if (typeof rootObj !== 'object' || rootObj === null) rootObj = {};
+
+      // Build nested structure for deep paths (e.g. 'a/b/c' → {b: {c: value}})
+      let target = rootObj;
+      for (let i = 1; i < parts.length - 1; i++) {
+        if (typeof target[parts[i]] !== 'object' || target[parts[i]] === null) {
+          target[parts[i]] = {};
+        }
+        target = target[parts[i]];
+      }
+      target[parts[parts.length - 1]] = value;
+
+      localStorage.setItem(rootKey, JSON.stringify(rootObj));
+    }
+
     notifyListeners(path, value);
   }
 }
