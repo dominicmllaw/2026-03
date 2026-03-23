@@ -55,12 +55,12 @@ async function init() {
         showScreen('intro');
         setupPracticeRound();
         showTutorialSlide(currentTutorialSlide);
-      } else {
-        // Game hasn't started yet — show waiting
-        showScreen('waiting');
-        $('waitingTitle').textContent = 'You\'re In!';
-        $('waitingMessage').textContent = 'Waiting for the teacher to start Round 1…';
-      }
+     } else {
+      // Game hasn't started yet — show intro/tutorial
+      showScreen('intro');
+      setupPracticeRound();
+      showTutorialSlide(0);
+    }
     } else {
       showScreen('waiting');
       $('waitingTitle').textContent = 'You\'re In!';
@@ -219,6 +219,10 @@ function pollGameState() {
       currentTutorialSlide = state.tutorialSlide;
       if (screens.intro.classList.contains('active')) {
         showTutorialSlide(currentTutorialSlide);
+      } else if (screens.waiting.classList.contains('active') && (state.currentRound || 0) === 0) {
+        showScreen('intro');
+        setupPracticeRound();
+        showTutorialSlide(currentTutorialSlide);
       }
     }
 
@@ -241,6 +245,11 @@ function pollGameState() {
     if (state.tutorialSlide != null && state.tutorialSlide !== currentTutorialSlide) {
       currentTutorialSlide = state.tutorialSlide;
       if (screens.intro.classList.contains('active')) {
+        showTutorialSlide(currentTutorialSlide);
+      } else if (screens.waiting.classList.contains('active') && (state.currentRound || 0) === 0) {
+        // Student is in waiting room but tutorial is active — bring them back to intro
+        showScreen('intro');
+        setupPracticeRound();
         showTutorialSlide(currentTutorialSlide);
       }
     }
