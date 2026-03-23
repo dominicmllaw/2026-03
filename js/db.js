@@ -9,16 +9,6 @@ let useFirebase = false;
 const LS_PREFIX = 'taa_';
 const listeners = new Map(); // path → Set<callback>
 let pollInterval = null;
-let broadcastChannel = null;
-try {
-  broadcastChannel = new BroadcastChannel('taa_sync');
-  broadcastChannel.addEventListener('message', (e) => {
-    if (e.data && e.data.path) {
-      console.log('[DB] BroadcastChannel received — path:', e.data.path);
-      notifyListeners(e.data.path, e.data.value);
-    }
-  });
-} catch (err) { /* BroadcastChannel not supported, fall back to storage events */ }
 
 /**
  * Initialise the database. Tries Firebase first, falls back to localStorage.
@@ -52,11 +42,14 @@ export async function set(path, value) {
   if (useFirebase) {
     const ref = firebaseDb.ref(path);
     await ref.set(value);
-} else {
+  } else {
     const key = LS_PREFIX + path.replace(/\//g, '.');
     console.log('[DB] set() — path:', path, '→ key:', key, '→ value:', value);
     localStorage.setItem(key, JSON.stringify(value));
 
+    // If this is a child path (e.g. 'game/tutorialSlide'), merge the value
+    // into the parent object stored at the root key (e.g. 'taa_game') so that
+    // get('game') and onValue('game', ...) see the change.
     const parts = path.split('/');
     if (parts.length > 1) {
       const rootKey = LS_PREFIX + parts[0];
@@ -65,6 +58,7 @@ export async function set(path, value) {
       try { rootObj = raw ? JSON.parse(raw) : {}; } catch { rootObj = {}; }
       if (typeof rootObj !== 'object' || rootObj === null) rootObj = {};
 
+      // Build nested structure for deep paths (e.g. 'a/b/c' → {b: {c: value}})
       let target = rootObj;
       for (let i = 1; i < parts.length - 1; i++) {
         if (typeof target[parts[i]] !== 'object' || target[parts[i]] === null) {
@@ -78,33 +72,6 @@ export async function set(path, value) {
     }
 
     notifyListeners(path, value);
-
-    // Broadcast to other tabs via BroadcastChannel
-    if (broadcastChannel) {
-      broadcastChannel.postMessage({ path, value });
-      if (parts.length > 1) {
-        const rootPath = parts[0];
-        const rootKey2 = LS_PREFIX + rootPath;
-        const raw2 = localStorage.getItem(rootKey2);
-        if (raw2) {
-          try { broadcastChannel.postMessage({ path: rootPath, value: JSON.parse(raw2) }); } catch {}
-        }
-      }
-    }
-  }
-
-    // Broadcast to other tabs via BroadcastChannel
-    if (broadcastChannel) {
-      broadcastChannel.postMessage({ path, value });
-      // Also broadcast the root path with full merged state
-      // so that onValue('game', ...) listeners in other tabs fire
-      const rootPath = parts[0];
-      const rootKey = LS_PREFIX + rootPath;
-      const raw2 = localStorage.getItem(rootKey);
-      if (raw2) {
-        try { broadcastChannel.postMessage({ path: rootPath, value: JSON.parse(raw2) }); } catch {}
-      }
-    }
   }
 }
 
