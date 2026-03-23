@@ -24,8 +24,20 @@
       <div class="control-card">
         <h3 id="controlRoundTitle">Game Controls</h3>
 
+        <!-- Tutorial Controls (Issue 15) -->
+        <div class="tutorial-controls" id="tutorialControls">
+          <h4>Tutorial</h4>
+          <div class="tutorial-slide-info">
+            <span id="tutorialSlideLabel">Slide 1 / 4</span>
+          </div>
+          <div class="tutorial-nav-buttons">
+            <button class="btn btn-small btn-primary" id="btnTutorialPrev" disabled>Prev</button>
+            <button class="btn btn-small btn-primary" id="btnTutorialNext">Next Slide</button>
+            <button class="btn btn-small btn-warning" id="btnSkipTutorial">Skip All</button>
+          </div>
+        </div>
+
         <div class="control-buttons">
-          <button class="btn btn-small btn-warning" id="btnSkipTutorial">Skip Tutorial (all students)</button>
           <button class="btn btn-primary" id="btnStartRound">Start Round 1</button>
           <button class="btn btn-warning" id="btnCloseSubmissions" disabled>Close Submissions</button>
           <button class="btn btn-success" id="btnRevealResults" disabled>Reveal Results</button>
@@ -54,6 +66,13 @@
             <tbody id="submissionTableBody"></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Justification Logic Monitor (Issue 17) -->
+      <div class="control-card" id="justMonitorCard" hidden>
+        <h3>Justification Monitor</h3>
+        <p class="scoring-hint">Auto-flags contradictions between tax level and elasticity reasoning.</p>
+        <div id="justMonitorRows"></div>
       </div>
 
       <!-- Justification scoring (Issue 8) — 0/10/20 buttons per group -->

@@ -50,7 +50,7 @@ export function scoreSubmission(roundConfig, submission, simResult) {
     }
   }
 
-  // ── 3. Burden prediction accuracy (0–20 points, Rounds 2–3) ──
+  // ── 3. Burden prediction accuracy (0–20 points, Rounds 2–4) ──
   if (roundConfig.hasBurdenPrediction && submission.burdenPrediction != null) {
     const predicted = submission.burdenPrediction;
     const actual = simResult.consumerBurdenPct;

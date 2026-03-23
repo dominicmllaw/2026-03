@@ -2,7 +2,7 @@
 // All round parameters, targets, and constants
 
 export const TOTAL_GROUPS = 16;
-export const TOTAL_ROUNDS = 3;
+export const TOTAL_ROUNDS = 4;
 
 // Firebase configuration — replace with your project's config before deployment
 export const FIREBASE_CONFIG = {
@@ -93,6 +93,7 @@ export const ROUNDS = [
     secondaryTarget: null,
     hasBurdenPrediction: false,
     timeLimit: null,
+    sliderZones: { green: [1, 12], amber: [13, 17], red: [18, 20] },
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -144,6 +145,7 @@ export const ROUNDS = [
     secondaryTarget: null,
     hasBurdenPrediction: true,
     timeLimit: null,
+    sliderZones: { green: [1, 10], amber: [11, 13], red: [14, 15] },
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -198,6 +200,52 @@ export const ROUNDS = [
     },
     hasBurdenPrediction: true,
     timeLimit: 120,
+    sliderZones: { green: [1, 2], amber: [3, 4], red: [5, 5] },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // Round 4: Life-Saving Medicine Tax — Perfectly Inelastic Demand
+  // ═══════════════════════════════════════════════════════════════
+  // Perfectly inelastic demand (Ed = 0): Q fixed at 20 units regardless of price
+  // Supply: Ps = 10 + 1·Q → P₀ = 10 + 20 = $30
+  //
+  // Consumer burden = 100% (vertical demand curve → all tax passed to consumers)
+  // PES = P₀ / (d × Q₀) = 30 / (1 × 20) = 1.5 → elastic supply ✓
+  //
+  // Model answer t = $5:
+  //   Qt = 20 (unchanged), Pc = 30 + 5 = $35, Ps = $30
+  //   Revenue = 5 × 20 = $100  ← target
+  //   Consumer burden = 100%, Producer burden = 0%
+  //   All values are integers ✓
+  {
+    id: 4,
+    title: 'The Aha Moment',
+    subtitle: 'Medicine Tax',
+    market: 'Life-saving medicine (insulin)',
+    scenario: 'The government is considering a unit tax on a life-saving medicine (insulin for diabetic patients). The medicine currently costs HK$30 per dose. Can you hit the revenue target — and who will really pay?',
+    demandClue: 'Patients need this medicine to survive — they will buy the same quantity regardless of price. Demand is completely unresponsive to price.',
+    supplyClue: 'Pharmaceutical companies can adjust production levels relatively easily — supply is responsive to price.',
+    demandElasticity: 'perfectly inelastic',
+    supplyElasticity: 'elastic',
+    unit: 'HK$ per dose',
+    perfectlyInelastic: true,
+    fixedQuantity: 20,
+    c: 10,
+    d: 1,
+    // Equilibrium: Q₀ = 20, P₀ = $30
+    scheduleMin: 20,
+    scheduleMax: 45,
+    scheduleStep: 5,
+    sliderMin: 1,
+    sliderMax: 10,
+    sliderStep: 1,
+    sliderDefault: 3,
+    revenueTarget: 100,
+    revenueTargetLabel: 'HK$100',
+    secondaryTarget: null,
+    hasBurdenPrediction: true,
+    timeLimit: null,
+    sliderZones: { green: [1, 4], amber: [5, 7], red: [8, 10] },
   },
 ];
 

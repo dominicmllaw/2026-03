@@ -1,52 +1,72 @@
 // Tax Adviser Arena — Simulation Engine
-// Calculates equilibrium outcomes for linear S/D model with unit tax/subsidy
+// Calculates equilibrium outcomes for linear S/D model with unit tax
 
 /**
- * Simulate the effect of a unit tax or subsidy on a market.
+ * Simulate the effect of a unit tax on a market.
  *
- * Model:
+ * Standard model:
  *   Demand (inverse): Pd = a - b·Q
  *   Supply (inverse): Ps = c + d·Q
- *   Tax wedge: Pc = Ps + t  (t > 0 = tax, t < 0 = subsidy)
+ *   Tax wedge: Pc = Ps + t
  *
- * Burden / benefit derivation (correct formula):
- *   New Qt = (a - c - t) / (b + d)
- *   Consumer price change:  ΔPc = b·t / (b + d)   →  consumer share = b / (b + d)
- *   Producer price change: |ΔPs| = d·t / (b + d)  →  producer share = d / (b + d)
- *
- * This means:
- *   - Larger b (steeper inverse demand) → consumers bear MORE
- *   - Larger d (steeper inverse supply) → producers bear MORE
- *
- * In elasticity terms at equilibrium:
- *   PED = P₀/(b·Q₀),  PES = P₀/(d·Q₀)
- *   Consumer share = PES / (PED + PES) = b / (b + d)
- *   The MORE INELASTIC side bears MORE of the tax burden.
+ * Perfectly inelastic demand (Ed = 0):
+ *   Demand: Q = fixedQuantity (vertical line)
+ *   Supply: Ps = c + d·Q
+ *   Tax: Qt = Q₀ (unchanged), Pc = P₀ + t, Ps = P₀
+ *   Consumer burden = 100%
  *
  * @param {Object} roundConfig - Round configuration from config.js
- * @param {number} taxRate - Per-unit tax (positive) or subsidy (negative)
+ * @param {number} taxRate - Per-unit tax (positive)
  * @returns {Object} Simulation results
  */
 export function simulate(roundConfig, taxRate) {
-  const { a, b, c, d } = roundConfig;
   const t = taxRate;
+
+  // ── Perfectly inelastic demand (Ed = 0) ──
+  if (roundConfig.perfectlyInelastic) {
+    const { c, d, fixedQuantity } = roundConfig;
+    const Q0 = fixedQuantity;
+    const P0 = c + d * Q0;
+    const Qt = Q0; // quantity never changes
+    const Pc = P0 + t; // full tax passed to consumers
+    const Ps = P0; // producer price unchanged
+    const revenue = t * Qt;
+
+    return {
+      freeMarket: { P: round2(P0), Q: round2(Q0) },
+      newEquilibrium: { Pc: round2(Pc), Ps: round2(Ps), Q: round2(Qt) },
+      taxRate: round2(t),
+      revenue: round2(revenue),
+      govCost: 0,
+      consumerBurdenPct: t !== 0 ? 100 : 0,
+      producerBurdenPct: 0,
+      consumerBurdenDollars: round2(Math.abs(Pc - P0) * Qt),
+      producerBurdenDollars: 0,
+      quantityChange: 0,
+      priceChange: round2(t),
+      priceChangePct: round2((t / P0) * 100),
+      curves: { c, d, Q0: round2(Q0), P0: round2(P0), Qt: round2(Qt), perfectlyInelastic: true, fixedQuantity },
+    };
+  }
+
+  // ── Standard linear model ──
+  const { a, b, c, d } = roundConfig;
 
   // Free-market equilibrium
   const Q0 = (a - c) / (b + d);
   const P0 = a - b * Q0;
 
-  // With tax/subsidy
+  // With tax
   let Qt = (a - c - t) / (b + d);
   if (Qt < 0) Qt = 0; // market shutdown
 
   const Pc = a - b * Qt;       // price consumers pay
   const Ps = Pc - t;            // price producers receive
 
-  // Revenue (tax) or cost (subsidy)
+  // Revenue
   const revenue = t * Qt;
-  const govCost = t < 0 ? Math.abs(t) * Qt : 0; // subsidy cost to government
 
-  // Burden / benefit analysis
+  // Burden analysis
   // CORRECT formula: consumer share = b / (b + d)
   let consumerBurdenPct = 0;
   let producerBurdenPct = 0;
@@ -71,13 +91,13 @@ export function simulate(roundConfig, taxRate) {
     // Free market
     freeMarket: { P: round2(P0), Q: round2(Q0) },
 
-    // After tax/subsidy
+    // After tax
     newEquilibrium: { Pc: round2(Pc), Ps: round2(Ps), Q: round2(Qt) },
 
-    // Tax/subsidy details
+    // Tax details
     taxRate: round2(t),
     revenue: round2(revenue),
-    govCost: round2(govCost),
+    govCost: 0,
 
     // Burden split
     consumerBurdenPct,
@@ -102,11 +122,46 @@ export function simulate(roundConfig, taxRate) {
 
 /**
  * Generate points for plotting S/D curves.
- * @param {Object} roundConfig - { a, b, c, d }
- * @param {number} taxRate - tax/subsidy amount
+ * @param {Object} roundConfig - { a, b, c, d } or { perfectlyInelastic, fixedQuantity, c, d }
+ * @param {number} taxRate - tax amount
  * @returns {Object} Arrays of {x, y} points for demand, supply, and shifted supply
  */
 export function generateCurvePoints(roundConfig, taxRate = 0) {
+  // ── Perfectly inelastic demand ──
+  if (roundConfig.perfectlyInelastic) {
+    const { c, d, fixedQuantity } = roundConfig;
+    const Q0 = fixedQuantity;
+    const P0 = c + d * Q0;
+    const qMax = Q0 * 1.6;
+    const pMax = (P0 + Math.abs(taxRate) + 5) * 1.3;
+
+    // Demand: vertical line at Q0
+    const demand = [
+      { x: round2(Q0), y: 0 },
+      { x: round2(Q0), y: round2(pMax) },
+    ];
+
+    // Supply: normal upward-sloping
+    const supply = [];
+    const supplyShifted = [];
+    const steps = 60;
+    const dq = qMax / steps;
+    for (let i = 0; i <= steps; i++) {
+      const q = i * dq;
+      const ps = c + d * q;
+      if (ps >= 0 && ps <= pMax) supply.push({ x: round2(q), y: round2(ps) });
+      if (taxRate !== 0) {
+        const psShifted = ps + taxRate;
+        if (psShifted >= 0 && psShifted <= pMax) {
+          supplyShifted.push({ x: round2(q), y: round2(psShifted) });
+        }
+      }
+    }
+
+    return { demand, supply, supplyShifted };
+  }
+
+  // ── Standard linear model ──
   const { a, b, c, d } = roundConfig;
   const Q0 = (a - c) / (b + d);
   const qMax = Q0 * 1.6;
@@ -135,14 +190,19 @@ export function generateCurvePoints(roundConfig, taxRate = 0) {
 }
 
 /**
- * Compute the optimal tax/subsidy rate for a round.
- * For tax rounds: minimum tax to hit the revenue target (subject to constraints).
- * For subsidy rounds: minimum subsidy to hit quantity target within budget.
- *
+ * Compute the optimal tax rate for a round.
  * @param {Object} roundConfig
- * @returns {number} Optimal rate (positive for tax, positive for subsidy magnitude)
+ * @returns {number} Optimal tax rate
  */
 export function computeOptimalRate(roundConfig) {
+  // Perfectly inelastic: Revenue = t * Q₀ → t = R / Q₀
+  if (roundConfig.perfectlyInelastic) {
+    if (roundConfig.revenueTarget != null) {
+      return round2(roundConfig.revenueTarget / roundConfig.fixedQuantity);
+    }
+    return 0;
+  }
+
   const { a, b, c, d } = roundConfig;
   const k = a - c; // demand-supply intercept gap
   const s = b + d; // sum of slopes
@@ -179,11 +239,43 @@ export function computeOptimalRate(roundConfig) {
 /**
  * Generate a demand/supply schedule table for a round.
  *
- * @param {Object} roundConfig - { a, b, c, d, schedulePrices }
+ * @param {Object} roundConfig
  * @param {number} taxRate - 0 for before-tax schedule, nonzero for after-tax
  * @returns {Array} Rows of { p, qd, qs, qsAfter?, isEquilibrium, isNewEquilibrium? }
  */
 export function generateSchedule(roundConfig, taxRate = 0) {
+  // ── Perfectly inelastic demand ──
+  if (roundConfig.perfectlyInelastic) {
+    const { c, d, fixedQuantity } = roundConfig;
+    const Q0 = fixedQuantity;
+    const P0 = round2(c + d * Q0);
+    const Pc = round2(P0 + taxRate);
+
+    // Generate prices around equilibrium
+    let prices = roundConfig.schedulePrices
+      ? [...roundConfig.schedulePrices]
+      : autoSchedulePrices(P0, P0 * 2.5, c);
+
+    if (!prices.some(p => Math.abs(p - P0) < 0.05)) prices.push(P0);
+    if (taxRate !== 0 && !prices.some(p => Math.abs(p - Pc) < 0.05)) prices.push(Pc);
+    prices.sort((x, y) => x - y);
+
+    return prices.map(p => {
+      const row = {
+        p: round1(p),
+        qd: round1(Q0), // always Q0 — perfectly inelastic
+        qs: round1(Math.max(0, (p - c) / d)),
+        isEquilibrium: Math.abs(p - P0) < 0.05,
+      };
+      if (taxRate !== 0) {
+        row.qsAfter = round1(Math.max(0, (p - c - taxRate) / d));
+        row.isNewEquilibrium = Math.abs(p - Pc) < 0.05;
+      }
+      return row;
+    });
+  }
+
+  // ── Standard linear model ──
   const { a, b, c, d } = roundConfig;
   const Q0 = (a - c) / (b + d);
   const P0 = round2(a - b * Q0);

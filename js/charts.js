@@ -22,15 +22,26 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
   canvas.height = h * dpr;
   ctx.scale(dpr, dpr);
 
-  const { a, b, c, d } = roundConfig;
   const showShift = taxRate !== 0 && options.showShift !== false;
+  const isPerfInelastic = roundConfig.perfectlyInelastic;
 
   // Compute equilibria
-  const Q0 = (a - c) / (b + d);
-  const P0 = a - b * Q0;
-  const Qt = taxRate !== 0 ? Math.max(0, (a - c - taxRate) / (b + d)) : Q0;
-  const Pc = a - b * Qt;
-  const Ps = Pc - taxRate;
+  let Q0, P0, Qt, Pc, Ps;
+  if (isPerfInelastic) {
+    const { c, d, fixedQuantity } = roundConfig;
+    Q0 = fixedQuantity;
+    P0 = c + d * Q0;
+    Qt = Q0; // quantity never changes
+    Pc = P0 + taxRate;
+    Ps = P0;
+  } else {
+    const { a, b, c, d } = roundConfig;
+    Q0 = (a - c) / (b + d);
+    P0 = a - b * Q0;
+    Qt = taxRate !== 0 ? Math.max(0, (a - c - taxRate) / (b + d)) : Q0;
+    Pc = a - b * Qt;
+    Ps = Pc - taxRate;
+  }
 
   // Chart area with margins (extra space for tick labels)
   const margin = { top: 30, right: 30, bottom: 55, left: 65 };
@@ -39,7 +50,13 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
 
   // Scale ranges
   const qMax = Q0 * 1.6;
-  const pMax = Math.max(a, c + d * qMax, a + Math.abs(taxRate)) * 1.1;
+  const a = roundConfig.a || 0;
+  const c = roundConfig.c || 0;
+  const d = roundConfig.d || 0;
+  const pMaxCandidates = isPerfInelastic
+    ? [P0 + Math.abs(taxRate) + 5, c + d * qMax]
+    : [a, c + d * qMax, a + Math.abs(taxRate)];
+  const pMax = Math.max(...pMaxCandidates) * 1.1;
   const pMin = 0; // always start from 0
   const pRange = pMax - pMin;
 
@@ -128,28 +145,14 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
     ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
   }
 
-  // ── Burden / benefit shading ──
-  if (showShift && options.showBurden && Qt > 0) {
-    const isSubsidy = options.isSubsidy || roundConfig.isSubsidy;
-    // For tax: consumer burden (P0→Pc above), producer burden (Ps→P0 below)
-    // For subsidy: consumer benefit (Pc→P0, Pc<P0), producer benefit (P0→Ps, Ps>P0)
-    // Visually the areas are the same rectangles either way
-    if (taxRate > 0) {
-      // Consumer burden (above P0, below Pc)
-      ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
-      ctx.fillRect(scaleX(0), scaleY(Pc), scaleX(Qt) - scaleX(0), scaleY(P0) - scaleY(Pc));
-      // Producer burden (above Ps, below P0)
-      ctx.fillStyle = 'rgba(139, 92, 246, 0.25)';
-      ctx.fillRect(scaleX(0), scaleY(P0), scaleX(Qt) - scaleX(0), scaleY(Ps) - scaleY(P0));
-    } else {
-      // Subsidy: Pc < P0 < Ps
-      // Consumer benefit (above Pc, below P0)
-      ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
-      ctx.fillRect(scaleX(0), scaleY(P0), scaleX(Qt) - scaleX(0), scaleY(Pc) - scaleY(P0));
-      // Producer benefit (above P0, below Ps)
-      ctx.fillStyle = 'rgba(139, 92, 246, 0.25)';
-      ctx.fillRect(scaleX(0), scaleY(Ps), scaleX(Qt) - scaleX(0), scaleY(P0) - scaleY(Ps));
-    }
+  // ── Burden shading ──
+  if (showShift && options.showBurden && Qt > 0 && taxRate > 0) {
+    // Consumer burden (above P0, below Pc)
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
+    ctx.fillRect(scaleX(0), scaleY(Pc), scaleX(Qt) - scaleX(0), scaleY(P0) - scaleY(Pc));
+    // Producer burden (above Ps, below P0)
+    ctx.fillStyle = 'rgba(139, 92, 246, 0.25)';
+    ctx.fillRect(scaleX(0), scaleY(P0), scaleX(Qt) - scaleX(0), scaleY(Ps) - scaleY(P0));
   }
 
   // ── Draw curves ──
@@ -235,7 +238,7 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
       ctx.fillStyle = '#64748b';
       ctx.font = '11px -apple-system, sans-serif';
       ctx.textAlign = 'left';
-      const wedgeLabel = roundConfig.isSubsidy ? 'subsidy' : 'tax';
+      const wedgeLabel = 'tax';
       ctx.fillText(`${wedgeLabel}=$${Math.abs(taxRate).toFixed(1)}`, xWedge + 4, (yTop + yBot) / 2 + 4);
     }
 
@@ -264,7 +267,7 @@ export function drawSDDiagram(canvas, roundConfig, taxRate = 0, options = {}) {
   if (showShift && curves.supplyShifted.length > 0) {
     const ssEnd = curves.supplyShifted[curves.supplyShifted.length - 1];
     ctx.fillStyle = COLOURS.supplyShifted;
-    ctx.fillText(taxRate > 0 ? 'S + tax' : 'S \u2212 sub', scaleX(ssEnd.x) + 5, scaleY(ssEnd.y));
+    ctx.fillText('S + tax', scaleX(ssEnd.x) + 5, scaleY(ssEnd.y));
   }
 }
 

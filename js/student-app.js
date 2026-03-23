@@ -11,6 +11,7 @@ let groupNumber = null;
 let currentRound = 0;
 let currentPhase = PHASE.LOBBY;
 let timerInterval = null;
+let currentTutorialSlide = 0; // Issue 15: synced tutorial slide
 
 // ── DOM refs ──
 const $ = (id) => document.getElementById(id);
@@ -48,6 +49,12 @@ async function init() {
       currentPhase = state.phase || PHASE.LOBBY;
       if (state.skipTutorial || currentRound > 0) {
         await handleStateChange();
+      } else if (state.tutorialSlide != null) {
+        // Issue 15+18: Restore tutorial slide on refresh
+        currentTutorialSlide = state.tutorialSlide;
+        showScreen('intro');
+        setupPracticeRound();
+        showTutorialSlide(currentTutorialSlide);
       } else {
         // Game hasn't started yet — show waiting
         showScreen('waiting');
@@ -112,9 +119,10 @@ function joinGame() {
   $('groupBadge').hidden = false;
   $('groupNum').textContent = groupNumber;
 
-  // Show intro/tutorial screen (Issue 13)
+  // Show intro/tutorial screen (Issue 13 + 15: teacher-synced)
   showScreen('intro');
   setupPracticeRound();
+  showTutorialSlide(currentTutorialSlide);
 }
 
 // ── Practice Round (Issue 13) ──
@@ -175,6 +183,20 @@ function enterWaitingRoom() {
   $('waitingMessage').textContent = 'Waiting for the teacher to start Round 1…';
 }
 
+// Issue 15: Teacher-synced tutorial slides
+function showTutorialSlide(slideIndex) {
+  const sections = document.querySelectorAll('.intro-section');
+  sections.forEach((sec, i) => {
+    sec.style.display = i <= slideIndex ? '' : 'none';
+  });
+  // Only show "Ready" button on last slide
+  $('btnEnterWaiting').style.display = slideIndex >= sections.length - 1 ? '' : 'none';
+  // Scroll to current slide
+  if (sections[slideIndex]) {
+    sections[slideIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 // Called when teacher clicks "Skip Tutorial" — jumps to waiting
 function skipToWaiting() {
   if (screens.intro.classList.contains('active')) {
@@ -192,6 +214,14 @@ function pollGameState() {
     // Issue 13: teacher skip tutorial
     if (state.skipTutorial) skipToWaiting();
 
+    // Issue 15: teacher-synced tutorial slide
+    if (state.tutorialSlide != null && state.tutorialSlide !== currentTutorialSlide) {
+      currentTutorialSlide = state.tutorialSlide;
+      if (screens.intro.classList.contains('active')) {
+        showTutorialSlide(currentTutorialSlide);
+      }
+    }
+
     if (newRound !== currentRound || newPhase !== currentPhase) {
       currentRound = newRound;
       currentPhase = newPhase;
@@ -206,6 +236,14 @@ function pollGameState() {
     const newPhase = state.phase || PHASE.LOBBY;
 
     if (state.skipTutorial) skipToWaiting();
+
+    // Issue 15: teacher-synced tutorial slide
+    if (state.tutorialSlide != null && state.tutorialSlide !== currentTutorialSlide) {
+      currentTutorialSlide = state.tutorialSlide;
+      if (screens.intro.classList.contains('active')) {
+        showTutorialSlide(currentTutorialSlide);
+      }
+    }
 
     if (newRound !== currentRound || newPhase !== currentPhase) {
       currentRound = newRound;
@@ -236,6 +274,17 @@ async function handleStateChange() {
     if (existing) {
       showSubmittedScreen(existing);
     } else {
+      // Issue 18: Check for locally-backed-up submission
+      const backup = localStorage.getItem(`taa_backup_${currentRound}_${groupNumber}`);
+      if (backup) {
+        try {
+          const sub = JSON.parse(backup);
+          await set(`submissions/${currentRound}/${groupNumber}`, sub);
+          localStorage.removeItem(`taa_backup_${currentRound}_${groupNumber}`);
+          showSubmittedScreen(sub);
+          return;
+        } catch (e) { /* ignore, show submit screen */ }
+      }
       setupSubmitScreen(round);
     }
   } else if (currentPhase === PHASE.CLOSED) {
@@ -331,6 +380,34 @@ function onTaxSliderChange() {
 
   $('taxValue').textContent = `$${Math.abs(val).toFixed(2)}`;
   $('taxUnit').textContent = round.unit;
+
+  // Issue 16: Colour-coded slider zone
+  updateSliderZone(val, round);
+}
+
+function updateSliderZone(val, round) {
+  const slider = $('taxSlider');
+  const zoneLabel = $('sliderZoneLabel');
+  if (!round.sliderZones || !zoneLabel) return;
+
+  const zones = round.sliderZones;
+  let zone = 'green';
+  let label = 'Low';
+  if (val >= zones.red[0] && val <= zones.red[1]) {
+    zone = 'red'; label = 'High';
+  } else if (val >= zones.amber[0] && val <= zones.amber[1]) {
+    zone = 'amber'; label = 'Moderate';
+  }
+
+  zoneLabel.textContent = label;
+  zoneLabel.className = 'slider-zone-label zone-' + zone;
+
+  // Update slider track gradient
+  const min = parseFloat(slider.min);
+  const max = parseFloat(slider.max);
+  const greenEnd = ((zones.green[1] - min) / (max - min)) * 100;
+  const amberEnd = ((zones.amber[1] - min) / (max - min)) * 100;
+  slider.style.background = `linear-gradient(to right, #16a34a 0%, #16a34a ${greenEnd}%, #f59e0b ${greenEnd}%, #f59e0b ${amberEnd}%, #dc2626 ${amberEnd}%, #dc2626 100%)`;
 }
 
 // Issue 7: check if both dropdowns are selected

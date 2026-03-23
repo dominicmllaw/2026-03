@@ -16,6 +16,7 @@ let allScores = {};
 let manualScores = {};
 let pollTimer = null;
 let revealResults = {}; // { groupNum: { submission, simResult, score } }
+let tutorialSlide = 0; // Issue 15: current tutorial slide (0-3)
 
 const $ = (id) => document.getElementById(id);
 
@@ -43,6 +44,12 @@ async function init() {
         if (!allScores[gNum]) allScores[gNum] = {};
         allScores[gNum][currentRound] = score.total;
       }
+    }
+
+    // Issue 15+18: Restore tutorial slide
+    if (state.tutorialSlide != null) {
+      tutorialSlide = state.tutorialSlide;
+      updateTutorialUI();
     }
 
     // Restore scores from previous rounds
@@ -73,10 +80,26 @@ function bindEvents() {
   $('btnRevealResults').addEventListener('click', doRevealResults);
   $('btnNextRound').addEventListener('click', nextRound);
   $('btnEndGame').addEventListener('click', endGame);
+  // Issue 15: Tutorial slide controls
+  $('btnTutorialNext').addEventListener('click', async () => {
+    if (tutorialSlide < 3) {
+      tutorialSlide++;
+      await set('game/tutorialSlide', tutorialSlide);
+      updateTutorialUI();
+    }
+  });
+  $('btnTutorialPrev').addEventListener('click', async () => {
+    if (tutorialSlide > 0) {
+      tutorialSlide--;
+      await set('game/tutorialSlide', tutorialSlide);
+      updateTutorialUI();
+    }
+  });
   $('btnSkipTutorial').addEventListener('click', async () => {
     await set('game/skipTutorial', true);
     $('btnSkipTutorial').disabled = true;
-    $('btnSkipTutorial').textContent = 'Tutorial Skipped';
+    $('btnSkipTutorial').textContent = 'Skipped';
+    $('tutorialControls').style.display = 'none';
   });
   $('btnReset').addEventListener('click', async () => {
     if (confirm('Reset the entire game? All data will be lost.')) {
@@ -108,6 +131,90 @@ function bindTabs() {
       if (content) content.classList.add('active');
     });
   });
+}
+
+// ── Tutorial UI (Issue 15) ──
+
+const TUTORIAL_SLIDES = ['How This Game Works', 'Your Screen Explained', 'How to Score High', 'Practice Round'];
+
+function updateTutorialUI() {
+  $('tutorialSlideLabel').textContent = `Slide ${tutorialSlide + 1} / ${TUTORIAL_SLIDES.length}: ${TUTORIAL_SLIDES[tutorialSlide]}`;
+  $('btnTutorialPrev').disabled = tutorialSlide <= 0;
+  $('btnTutorialNext').disabled = tutorialSlide >= TUTORIAL_SLIDES.length - 1;
+}
+
+// ── Justification Logic-Check (Issue 17) ──
+
+function checkJustificationContradiction(round, submission) {
+  const { justLevel, justReason } = submission;
+  if (!justLevel || !justReason) return null;
+
+  // Expected reasoning based on round elasticity
+  // If demand is less elastic (inelastic), consumers bear more → high tax is reasonable
+  // If demand is more elastic, producers bear more → high tax hurts revenue
+  const demandEl = round.demandElasticity || '';
+  const isPerfInelastic = round.perfectlyInelastic;
+
+  const flags = [];
+
+  if (isPerfInelastic) {
+    // Round 4: perfectly inelastic demand — consumers bear 100%
+    if (justReason === 'demand_more_elastic') {
+      flags.push('Says demand is more elastic, but demand is perfectly inelastic (Ed=0)');
+    }
+    if (justReason === 'roughly_equal') {
+      flags.push('Says elasticities are roughly equal, but demand is perfectly inelastic');
+    }
+  } else if (demandEl.includes('inelastic') || demandEl === 'inelastic') {
+    // Demand is inelastic → "demand is less elastic than supply" is correct
+    if (justReason === 'demand_more_elastic') {
+      flags.push('Says demand is more elastic, but demand is inelastic');
+    }
+  } else if (demandEl.includes('elastic') && !demandEl.includes('inelastic')) {
+    // Demand is elastic → "demand is more elastic than supply" is correct
+    if (justReason === 'demand_less_elastic') {
+      flags.push('Says demand is less elastic, but demand is elastic');
+    }
+  }
+
+  // Tax level vs. slider position
+  const optRate = computeOptimalRate(round);
+  const taxRate = submission.taxRate;
+  if (justLevel === 'low' && taxRate > optRate * 1.3) {
+    flags.push(`Says "low" tax but set $${taxRate} (optimal ~$${optRate})`);
+  }
+  if (justLevel === 'high' && taxRate < optRate * 0.7) {
+    flags.push(`Says "high" tax but set $${taxRate} (optimal ~$${optRate})`);
+  }
+
+  return flags.length > 0 ? flags : null;
+}
+
+function updateJustificationMonitor(round, submissions) {
+  const container = $('justMonitorRows');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const sorted = Object.entries(submissions).sort(([a], [b]) => parseInt(a) - parseInt(b));
+  let hasFlags = false;
+
+  for (const [gNum, sub] of sorted) {
+    const flags = checkJustificationContradiction(round, sub);
+    if (flags) {
+      hasFlags = true;
+      const row = document.createElement('div');
+      row.className = 'just-monitor-row flagged';
+      row.innerHTML = `
+        <span class="just-monitor-group">G${gNum}</span>
+        <span class="just-monitor-flag">${flags.map(f => `<span class="flag-item">\u26a0\ufe0f ${escapeHtml(f)}</span>`).join('')}</span>
+      `;
+      container.appendChild(row);
+    }
+  }
+
+  if (!hasFlags) {
+    container.innerHTML = '<p class="scoring-hint">No contradictions detected.</p>';
+  }
 }
 
 // ── Game Flow Controls ──
@@ -232,6 +339,14 @@ function updateUI() {
   $('controlRoundTitle').textContent = round
     ? `Round ${round.id}: ${round.subtitle}`
     : 'Game Controls';
+
+  // Issue 15: Tutorial controls visibility
+  $('tutorialControls').style.display = currentRound === 0 ? '' : 'none';
+
+  // Issue 17: Justification monitor visibility
+  if (currentPhase !== PHASE.SUBMIT && currentPhase !== PHASE.CLOSED) {
+    $('justMonitorCard').hidden = true;
+  }
 
   // Scoring UI visibility
   if (currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= TOTAL_ROUNDS) {
@@ -516,6 +631,13 @@ async function pollSubmissions() {
   $('counterFill').style.width = `${(count / TOTAL_GROUPS) * 100}%`;
 
   updateSubmissionTable(submissions);
+
+  // Issue 17: Update justification monitor during submission phase
+  const round = ROUNDS[currentRound];
+  if (round && count > 0) {
+    $('justMonitorCard').hidden = false;
+    updateJustificationMonitor(round, submissions);
+  }
 }
 
 function clearSubmissionTable() {
