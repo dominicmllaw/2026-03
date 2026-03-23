@@ -60,6 +60,7 @@ async function init() {
   }
 
   updateUI();
+  updateTutorialUI(); // Ensure tutorial content visibility is set on load
 
   // If reveal phase was restored, re-render visuals
   if (currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= TOTAL_ROUNDS) {
@@ -141,6 +142,16 @@ function updateTutorialUI() {
   $('tutorialSlideLabel').textContent = `Slide ${tutorialSlide + 1} / ${TUTORIAL_SLIDES.length}: ${TUTORIAL_SLIDES[tutorialSlide]}`;
   $('btnTutorialPrev').disabled = tutorialSlide <= 0;
   $('btnTutorialNext').disabled = tutorialSlide >= TUTORIAL_SLIDES.length - 1;
+
+  // Progressive reveal of tutorial slide content (same logic as student)
+  const sections = document.querySelectorAll('#tutorialContent .intro-section');
+  sections.forEach((sec, i) => {
+    sec.style.display = i <= tutorialSlide ? '' : 'none';
+  });
+  // Scroll to current slide
+  if (sections[tutorialSlide]) {
+    sections[tutorialSlide].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 // ── Justification Logic-Check (Issue 17) ──

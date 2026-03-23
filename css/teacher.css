@@ -262,6 +262,110 @@
   font-size: 0.8rem;
 }
 
+/* ── Tutorial Content (teacher slide preview) ── */
+
+.tutorial-content {
+  margin-top: 12px;
+}
+
+.tutorial-content .intro-section {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tutorial-content .intro-section:last-of-type {
+  border-bottom: none;
+}
+
+.tutorial-content .intro-section h2 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: var(--primary);
+}
+
+.tutorial-content .intro-section p {
+  margin-bottom: 6px;
+  line-height: 1.5;
+  font-size: 0.85rem;
+}
+
+.tutorial-content .interface-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tutorial-content .guide-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: white;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+
+.tutorial-content .guide-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.tutorial-content .guide-item div {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.tutorial-content .scoring-guide-list {
+  list-style: none;
+  padding: 0;
+}
+
+.tutorial-content .scoring-guide-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.tutorial-content .scoring-guide-list li:last-child {
+  border-bottom: none;
+}
+
+.tutorial-content .practice-scenario {
+  background: white;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+}
+
+.tutorial-content .practice-scenario p {
+  margin-bottom: 4px;
+}
+
+.tutorial-content .practice-intro {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.tutorial-content .practice-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
 /* ── Justification Monitor (Issue 17) ── */
 
 .just-monitor-row {
