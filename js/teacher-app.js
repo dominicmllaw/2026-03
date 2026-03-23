@@ -1,6 +1,6 @@
 // Tax Adviser Arena — Teacher Dashboard Controller
 
-import { ROUNDS, TOTAL_GROUPS, PHASE, COLOURS } from './config.js';
+import { ROUNDS, TOTAL_GROUPS, TOTAL_ROUNDS, PHASE, COLOURS } from './config.js';
 import { initDB, set, get, getChildren, onValue, resetGame } from './db.js';
 import { simulate, computeOptimalRate, generateSchedule } from './simulation.js';
 import { scoreSubmission, calculateLeaderboard } from './scoring.js';
@@ -25,12 +25,45 @@ async function init() {
   bindEvents();
   bindTabs();
 
+  // Issue 18: Restore state from DB on refresh
   const state = await get('game');
   if (state) {
     currentRound = state.currentRound || 0;
     currentPhase = state.phase || PHASE.LOBBY;
+
+    // If we're in reveal phase, restore reveal results
+    if (currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= TOTAL_ROUNDS) {
+      const round = ROUNDS[currentRound];
+      const submissions = await getChildren(`submissions/${currentRound}`) || {};
+      revealResults = {};
+      for (const [gNum, sub] of Object.entries(submissions)) {
+        const simResult = simulate(round, sub.taxRate);
+        const score = scoreSubmission(round, sub, simResult);
+        revealResults[gNum] = { submission: sub, simResult, score };
+        if (!allScores[gNum]) allScores[gNum] = {};
+        allScores[gNum][currentRound] = score.total;
+      }
+    }
+
+    // Restore scores from previous rounds
+    const savedScores = await get('scores');
+    if (savedScores) allScores = savedScores;
+    const savedManual = await get('manualScores');
+    if (savedManual) manualScores = savedManual;
   }
+
   updateUI();
+
+  // If reveal phase was restored, re-render visuals
+  if (currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= TOTAL_ROUNDS) {
+    const round = ROUNDS[currentRound];
+    if (round && Object.keys(revealResults).length > 0) {
+      renderResultsVisuals(round, revealResults);
+      setupGroupSelector(revealResults);
+      setupScoringUI(round, revealResults);
+    }
+  }
+
   startPolling();
 }
 
@@ -81,7 +114,7 @@ function bindTabs() {
 
 async function startRound() {
   const nextR = currentRound + 1;
-  if (nextR > 4) return;
+  if (nextR > TOTAL_ROUNDS) return;
 
   currentRound = nextR;
   currentPhase = PHASE.SUBMIT;
@@ -132,7 +165,7 @@ async function doRevealResults() {
 // Before: set game with same currentRound → start button label was wrong
 // Fix: the start button label now always uses currentRound + 1
 async function nextRound() {
-  if (currentRound >= 4) {
+  if (currentRound >= TOTAL_ROUNDS) {
     endGame();
     return;
   }
@@ -147,9 +180,9 @@ async function nextRound() {
 }
 
 async function endGame() {
-  currentRound = 5;
+  currentRound = TOTAL_ROUNDS + 1;
   currentPhase = PHASE.REVEAL;
-  await set('game', { currentRound: 5, phase: PHASE.REVEAL });
+  await set('game', { currentRound: TOTAL_ROUNDS + 1, phase: PHASE.REVEAL });
   renderFinalLeaderboard();
   updateUI();
 }
@@ -162,7 +195,7 @@ function updateUI() {
   // Phase indicator
   if (currentRound === 0) {
     $('phaseIndicator').textContent = 'Lobby';
-  } else if (currentRound > 4) {
+  } else if (currentRound > TOTAL_ROUNDS) {
     $('phaseIndicator').textContent = 'Game Over';
   } else {
     const phaseLabels = {
@@ -175,14 +208,14 @@ function updateUI() {
   }
 
   // Control buttons — Issue 6 fix: stricter enable conditions
-  $('btnStartRound').disabled = currentPhase !== PHASE.LOBBY || currentRound > 3;
+  $('btnStartRound').disabled = currentPhase !== PHASE.LOBBY || currentRound >= TOTAL_ROUNDS;
   $('btnCloseSubmissions').disabled = currentPhase !== PHASE.SUBMIT;
   $('btnRevealResults').disabled = currentPhase !== PHASE.CLOSED;
-  $('btnNextRound').disabled = currentPhase !== PHASE.REVEAL || currentRound > 4;
+  $('btnNextRound').disabled = currentPhase !== PHASE.REVEAL || currentRound > TOTAL_ROUNDS;
 
   // Start button label — Issue 6 fix: always show next round number
   const nextR = currentRound + 1;
-  if (nextR <= 4) {
+  if (nextR <= TOTAL_ROUNDS) {
     const nr = ROUNDS[nextR];
     $('btnStartRound').textContent = `Start Round ${nextR}${nr ? ': ' + nr.subtitle : ''}`;
   } else {
@@ -191,7 +224,7 @@ function updateUI() {
     $('btnEndGame').hidden = false;
   }
 
-  if (currentRound === 4 && currentPhase === PHASE.REVEAL) {
+  if (currentRound === TOTAL_ROUNDS && currentPhase === PHASE.REVEAL) {
     $('btnEndGame').hidden = false;
   }
 
@@ -201,7 +234,7 @@ function updateUI() {
     : 'Game Controls';
 
   // Scoring UI visibility
-  if (currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= 4) {
+  if (currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= TOTAL_ROUNDS) {
     $('scoringCard').hidden = false;
   } else {
     $('scoringCard').hidden = true;
@@ -211,9 +244,10 @@ function updateUI() {
   $('classStats').hidden = currentPhase !== PHASE.REVEAL;
 
   // Group selector visibility
-  $('groupSelectorBar').hidden = !(currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= 4);
-  $('dataTablePanel').hidden = !(currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= 4);
-  $('teacherScheduleSection').hidden = !(currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= 4);
+  const isRoundReveal = currentPhase === PHASE.REVEAL && currentRound >= 1 && currentRound <= TOTAL_ROUNDS;
+  $('groupSelectorBar').hidden = !isRoundReveal;
+  $('dataTablePanel').hidden = !isRoundReveal;
+  $('teacherScheduleSection').hidden = !isRoundReveal;
 
   // Draw current S/D diagram
   if (round && currentPhase === PHASE.REVEAL) {
@@ -230,27 +264,25 @@ function updateUI() {
 
 function showModelAnswer(round) {
   const optRate = computeOptimalRate(round);
-  const taxForSim = round.isSubsidy ? -optRate : optRate;
-  const result = simulate(round, taxForSim);
+  const result = simulate(round, optRate);
 
   // Diagram
-  drawSDDiagram($('teacherSD'), round, taxForSim, {
+  drawSDDiagram($('teacherSD'), round, optRate, {
     showShift: true,
     showRevenue: true,
     showBurden: true,
     showLabels: true,
-    isSubsidy: round.isSubsidy,
   });
 
   // Data table
-  $('dataTableTitle').textContent = `Model Answer — Optimal ${round.isSubsidy ? 'Subsidy' : 'Tax'}: $${optRate.toFixed(2)}`;
-  renderDataTable(round, result, taxForSim);
+  $('dataTableTitle').textContent = `Model Answer — Optimal Tax: $${optRate.toFixed(2)}`;
+  renderDataTable(round, result, optRate);
 
   // Schedule tables
-  renderTeacherSchedules(round, taxForSim);
+  renderTeacherSchedules(round, optRate);
 
   // Diagram info
-  $('diagramInfo').textContent = `Model answer: optimal ${round.isSubsidy ? 'subsidy' : 'tax'} rate = $${optRate.toFixed(2)}`;
+  $('diagramInfo').textContent = `Model answer: optimal tax rate = $${optRate.toFixed(2)}`;
 }
 
 function showGroupResult(round, groupNum) {
@@ -266,43 +298,34 @@ function showGroupResult(round, groupNum) {
     showRevenue: true,
     showBurden: true,
     showLabels: true,
-    isSubsidy: round.isSubsidy,
   });
 
   // Data table
-  $('dataTableTitle').textContent = `Group ${groupNum} — ${round.isSubsidy ? 'Subsidy' : 'Tax'}: $${Math.abs(taxRate).toFixed(2)}`;
+  $('dataTableTitle').textContent = `Group ${groupNum} — Tax: $${Math.abs(taxRate).toFixed(2)}`;
   renderDataTable(round, simResult, taxRate);
 
   // Schedule tables
   renderTeacherSchedules(round, taxRate);
 
   // Info
-  $('diagramInfo').textContent = `Group ${groupNum}: ${round.isSubsidy ? 'subsidy' : 'tax'} = $${Math.abs(taxRate).toFixed(2)} | Justification: ${submission.justification || '—'}`;
+  $('diagramInfo').textContent = `Group ${groupNum}: tax = $${Math.abs(taxRate).toFixed(2)} | Justification: ${submission.justification || '—'}`;
 }
 
 // ── Data Table (Issue 5C) ──
 
 function renderDataTable(round, result, taxRate) {
   const tbody = $('dataTableBody');
-  const isSubsidy = round.isSubsidy;
   const rows = [];
 
   rows.push(['Original Price (P\u2080)', `$${result.freeMarket.P.toFixed(2)}`]);
   rows.push(['Original Quantity (Q\u2080)', `${result.freeMarket.Q.toFixed(1)} units`]);
-  rows.push([isSubsidy ? 'Subsidy per unit (u)' : 'Tax per unit (t)', `$${Math.abs(taxRate).toFixed(2)}`]);
+  rows.push(['Tax per unit (t)', `$${Math.abs(taxRate).toFixed(2)}`]);
   rows.push(['New Consumer Price (P\u2081)', `$${result.newEquilibrium.Pc.toFixed(2)}`]);
   rows.push(['New Producer Price (P\u2082)', `$${result.newEquilibrium.Ps.toFixed(2)}`]);
   rows.push(['New Quantity (Q\u2081)', `${result.newEquilibrium.Q.toFixed(1)} units`]);
-
-  if (isSubsidy) {
-    rows.push(['Total Subsidy Expenditure (u \u00d7 Q\u2081)', `$${result.govCost.toFixed(2)}`]);
-    rows.push(['Consumer Benefit (P\u2080 \u2212 P\u2081) \u00d7 Q\u2081', `$${result.consumerBurdenDollars.toFixed(2)}`]);
-    rows.push(['Producer Benefit (P\u2082 \u2212 P\u2080) \u00d7 Q\u2081', `$${result.producerBurdenDollars.toFixed(2)}`]);
-  } else {
-    rows.push(['Tax Revenue (t \u00d7 Q\u2081)', `$${result.revenue.toFixed(2)}`]);
-    rows.push(['Consumer Tax Burden (P\u2081 \u2212 P\u2080) \u00d7 Q\u2081', `$${result.consumerBurdenDollars.toFixed(2)}`]);
-    rows.push(['Producer Tax Burden (P\u2080 \u2212 P\u2082) \u00d7 Q\u2081', `$${result.producerBurdenDollars.toFixed(2)}`]);
-  }
+  rows.push(['Tax Revenue (t \u00d7 Q\u2081)', `$${result.revenue.toFixed(2)}`]);
+  rows.push(['Consumer Tax Burden (P\u2081 \u2212 P\u2080) \u00d7 Q\u2081', `$${result.consumerBurdenDollars.toFixed(2)}`]);
+  rows.push(['Producer Tax Burden (P\u2080 \u2212 P\u2082) \u00d7 Q\u2081', `$${result.producerBurdenDollars.toFixed(2)}`]);
 
   tbody.innerHTML = rows.map(([label, val]) =>
     `<tr><td class="dt-label">${label}</td><td class="dt-value">${val}</td></tr>`
@@ -327,9 +350,8 @@ function renderTeacherSchedules(round, taxRate) {
   const afterRows = generateSchedule(round, taxRate);
   const afterBody = $('teacherScheduleAfterBody');
   afterBody.innerHTML = '';
-  const colName = round.isSubsidy ? 'Qs after subsidy (units)' : 'Qs after tax (units)';
-  $('teacherScheduleAfterHead').innerHTML = `<tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th><th>${colName}</th></tr>`;
-  $('teacherScheduleAfterTitle').textContent = round.isSubsidy ? 'After Subsidy' : 'After Tax';
+  $('teacherScheduleAfterHead').innerHTML = '<tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th><th>Qs after tax (units)</th></tr>';
+  $('teacherScheduleAfterTitle').textContent = 'After Tax';
   afterRows.forEach(row => {
     const tr = document.createElement('tr');
     if (row.isEquilibrium) tr.classList.add('eq-row');
@@ -484,7 +506,7 @@ function startPolling() {
 }
 
 async function pollSubmissions() {
-  if (currentRound < 1 || currentRound > 4) return;
+  if (currentRound < 1 || currentRound > TOTAL_ROUNDS) return;
   if (currentPhase !== PHASE.SUBMIT && currentPhase !== PHASE.CLOSED) return;
 
   const submissions = await getChildren(`submissions/${currentRound}`) || {};
@@ -530,12 +552,12 @@ function renderResultsVisuals(round, results) {
   const scatterData = entries.map(([gNum, r]) => ({
     group: parseInt(gNum),
     x: Math.abs(r.submission.taxRate),
-    y: round.isSubsidy ? r.simResult.govCost : r.simResult.revenue,
+    y: r.simResult.revenue,
   }));
 
   renderScatterPlot($('scatterChart'), scatterData, {
-    xLabel: round.isSubsidy ? 'Subsidy Rate ($)' : 'Tax Rate ($)',
-    yLabel: round.isSubsidy ? 'Government Cost ($)' : 'Government Revenue ($)',
+    xLabel: 'Tax Rate ($)',
+    yLabel: 'Government Revenue ($)',
     targetY: round.revenueTarget,
     onClickGroup: (g) => {
       $('groupViewSelect').value = g.toString();
@@ -573,12 +595,10 @@ function renderResultsVisuals(round, results) {
   $('classStats').hidden = false;
   const avgTax = entries.reduce((s, [, r]) => s + Math.abs(r.submission.taxRate), 0) / entries.length;
   $('statAvgTax').textContent = `$${avgTax.toFixed(2)}`;
-  const avgRevenue = entries.reduce((s, [, r]) => s + (round.isSubsidy ? r.simResult.govCost : r.simResult.revenue), 0) / entries.length;
+  const avgRevenue = entries.reduce((s, [, r]) => s + r.simResult.revenue, 0) / entries.length;
   $('statAvgRevenue').textContent = `$${avgRevenue.toFixed(2)}`;
   const sampleResult = entries[0][1].simResult;
-  const burdenLabel = round.isSubsidy ? 'Consumer benefit' : 'Consumer burden';
-  const producerLabel = round.isSubsidy ? 'Producer benefit' : 'Producer burden';
-  $('statAvgBurden').textContent = `${burdenLabel} ${sampleResult.consumerBurdenPct}% / ${producerLabel} ${sampleResult.producerBurdenPct}%`;
+  $('statAvgBurden').textContent = `Consumer burden ${sampleResult.consumerBurdenPct}% / Producer burden ${sampleResult.producerBurdenPct}%`;
 }
 
 function findOutliers(round, results) {
@@ -587,17 +607,14 @@ function findOutliers(round, results) {
 
   const flags = [];
 
-  if (!round.isSubsidy) {
-    const byRevenue = [...entries].sort(([, a], [, b]) => b.simResult.revenue - a.simResult.revenue);
-    const highest = byRevenue[0];
-    flags.push(`<div class="outlier"><strong>Group ${highest[0]}</strong> raised the most revenue: $${highest[1].simResult.revenue.toFixed(2)}</div>`);
-  }
+  const byRevenue = [...entries].sort(([, a], [, b]) => b.simResult.revenue - a.simResult.revenue);
+  const highest = byRevenue[0];
+  flags.push(`<div class="outlier"><strong>Group ${highest[0]}</strong> raised the most revenue: $${highest[1].simResult.revenue.toFixed(2)}</div>`);
 
   const byPrice = [...entries].sort(([, a], [, b]) => Math.abs(b.simResult.priceChange) - Math.abs(a.simResult.priceChange));
   const priciest = byPrice[0];
   if (Math.abs(priciest[1].simResult.priceChange) > 0) {
-    const dir = round.isSubsidy ? 'decrease' : 'increase';
-    flags.push(`<div class="outlier"><strong>Group ${priciest[0]}</strong> caused the biggest price ${dir}: $${Math.abs(priciest[1].simResult.priceChange).toFixed(2)}</div>`);
+    flags.push(`<div class="outlier"><strong>Group ${priciest[0]}</strong> caused the biggest price increase: $${Math.abs(priciest[1].simResult.priceChange).toFixed(2)}</div>`);
   }
 
   if (round.hasBurdenPrediction) {

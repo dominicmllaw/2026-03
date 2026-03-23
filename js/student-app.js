@@ -1,6 +1,6 @@
 // Tax Adviser Arena — Student App Controller
 
-import { ROUNDS, TOTAL_GROUPS, PHASE, COLOURS } from './config.js';
+import { ROUNDS, TOTAL_GROUPS, TOTAL_ROUNDS, PHASE, COLOURS } from './config.js';
 import { initDB, set, get, onValue } from './db.js';
 import { simulate, computeOptimalRate, generateSchedule } from './simulation.js';
 import { scoreSubmission, calculateLeaderboard } from './scoring.js';
@@ -30,11 +30,35 @@ async function init() {
   populateGroupDropdown();
   bindEvents();
 
+  // Issue 18: Restore group from sessionStorage on refresh
   const saved = sessionStorage.getItem('taa_group');
   if (saved) {
     groupNumber = parseInt(saved);
     $('groupSelect').value = groupNumber;
     $('btnJoin').disabled = false;
+
+    // Restore group badge immediately
+    $('groupBadge').hidden = false;
+    $('groupNum').textContent = groupNumber;
+
+    // Fetch current game state and show correct screen immediately
+    const state = await get('game');
+    if (state) {
+      currentRound = state.currentRound || 0;
+      currentPhase = state.phase || PHASE.LOBBY;
+      if (state.skipTutorial || currentRound > 0) {
+        await handleStateChange();
+      } else {
+        // Game hasn't started yet — show waiting
+        showScreen('waiting');
+        $('waitingTitle').textContent = 'You\'re In!';
+        $('waitingMessage').textContent = 'Waiting for the teacher to start Round 1…';
+      }
+    } else {
+      showScreen('waiting');
+      $('waitingTitle').textContent = 'You\'re In!';
+      $('waitingMessage').textContent = 'Waiting for the teacher to start Round 1…';
+    }
   }
 
   pollGameState();
@@ -199,7 +223,7 @@ async function handleStateChange() {
     return;
   }
 
-  if (currentRound > 4) {
+  if (currentRound > TOTAL_ROUNDS) {
     await showFinalResults();
     return;
   }
@@ -232,7 +256,7 @@ function setupSubmitScreen(round) {
   showScreen('submit');
 
   // Header
-  $('roundBadge').textContent = round.isSubsidy ? 'Bonus Round' : `Round ${round.id}`;
+  $('roundBadge').textContent = `Round ${round.id}`;
   $('roundTitle').textContent = round.title;
   $('roundSubtitle').textContent = round.subtitle;
 
@@ -244,9 +268,6 @@ function setupSubmitScreen(round) {
   // Target
   if (round.revenueTarget != null) {
     $('targetText').textContent = `Revenue target: Raise at least ${round.revenueTargetLabel} in tax revenue`;
-    $('targetBox').hidden = false;
-  } else if (round.isSubsidy) {
-    $('targetText').textContent = `${round.quantityTargetLabel}. Budget: ${round.subsidyBudgetLabel}`;
     $('targetBox').hidden = false;
   }
 
@@ -271,30 +292,17 @@ function setupSubmitScreen(round) {
   slider.value = round.sliderDefault;
   $('sliderMinLabel').textContent = `$${round.sliderMin}`;
   $('sliderMaxLabel').textContent = `$${round.sliderMax}`;
-
-  if (round.isSubsidy) {
-    $('taxSliderLabel').textContent = 'Set your subsidy rate';
-  } else {
-    $('taxSliderLabel').textContent = 'Set your tax rate';
-  }
+  $('taxSliderLabel').textContent = 'Set your tax rate';
   onTaxSliderChange();
 
-  // Burden prediction (Issue 9: subsidy terminology)
+  // Burden prediction
   const bGroup = $('burdenPredictionGroup');
   if (round.hasBurdenPrediction) {
     bGroup.hidden = false;
     $('burdenSlider').value = 50;
     $('burdenValue').textContent = '50%';
-    if (round.isSubsidy) {
-      $('burdenSliderLabel').textContent = 'We predict consumers receive ___% of the subsidy benefit';
-      $('burdenUnit').textContent = 'consumer benefit';
-    } else if (round.burdenPredictionLabel) {
-      $('burdenSliderLabel').textContent = round.burdenPredictionLabel;
-      $('burdenUnit').textContent = 'consumer burden';
-    } else {
-      $('burdenSliderLabel').textContent = 'Predict: what % of this tax will consumers bear?';
-      $('burdenUnit').textContent = 'consumer burden';
-    }
+    $('burdenSliderLabel').textContent = 'Predict: what % of this tax will consumers bear?';
+    $('burdenUnit').textContent = 'consumer burden';
   } else {
     bGroup.hidden = true;
   }
@@ -303,7 +311,7 @@ function setupSubmitScreen(round) {
   $('justDropdownA').value = '';
   $('justDropdownB').value = '';
   $('justElaboration').value = '';
-  $('justTaxWord').textContent = round.isSubsidy ? ' subsidy' : ' tax';
+  $('justTaxWord').textContent = ' tax';
   $('btnSubmit').disabled = true;
   $('submitHint').textContent = 'Select both dropdowns above to unlock the submit button.';
 
@@ -367,10 +375,7 @@ async function submitAnswer() {
   const round = ROUNDS[currentRound];
   if (!round || !groupNumber) return;
 
-  let taxRate = parseFloat($('taxSlider').value);
-  if (round.isSubsidy) {
-    taxRate = -Math.abs(taxRate);
-  }
+  const taxRate = parseFloat($('taxSlider').value);
 
   // Structured justification (Issue 7)
   const justLevel = $('justDropdownA').value;
@@ -384,8 +389,7 @@ async function submitAnswer() {
     justLevel,
     justReason,
     justText,
-    // Legacy field for backwards compat
-    justification: `We set a ${justLevel} ${round.isSubsidy ? 'subsidy' : 'tax'} because ${justReasonLabel(justReason)}.${justText ? ' ' + justText : ''}`,
+    justification: `We set a ${justLevel} tax because ${justReasonLabel(justReason)}.${justText ? ' ' + justText : ''}`,
     timestamp: new Date().toISOString(),
   };
 
@@ -422,10 +426,9 @@ function justReasonLabel(val) {
 function showSubmittedScreen(submission) {
   showScreen('submitted');
   const round = ROUNDS[currentRound];
-  let summary = `<p><strong>${round?.isSubsidy ? 'Subsidy' : 'Tax'} rate:</strong> $${Math.abs(submission.taxRate).toFixed(2)} ${round?.unit || ''}</p>`;
+  let summary = `<p><strong>Tax rate:</strong> $${Math.abs(submission.taxRate).toFixed(2)} ${round?.unit || ''}</p>`;
   if (submission.burdenPrediction != null) {
-    const label = round?.isSubsidy ? 'Consumer benefit prediction' : 'Consumer burden prediction';
-    summary += `<p><strong>${label}:</strong> ${submission.burdenPrediction}%</p>`;
+    summary += `<p><strong>Consumer burden prediction:</strong> ${submission.burdenPrediction}%</p>`;
   }
   summary += `<p><strong>Justification:</strong> "${submission.justification}"</p>`;
   $('submittedSummary').innerHTML = summary;
@@ -435,7 +438,7 @@ function showSubmittedScreen(submission) {
 async function showRevealScreen(round) {
   showScreen('reveal');
 
-  $('revealRoundBadge').textContent = round.isSubsidy ? 'Bonus Round' : `Round ${round.id}`;
+  $('revealRoundBadge').textContent = `Round ${round.id}`;
   $('revealTitle').textContent = `${round.title} — Results`;
 
   // Get this group's submission
@@ -450,8 +453,7 @@ async function showRevealScreen(round) {
 
   // Model answer (Issue 1)
   const optimalRate = computeOptimalRate(round);
-  const displayOptimal = round.isSubsidy ? optimalRate : optimalRate;
-  $('modelOptimalRate').textContent = `$${displayOptimal.toFixed(2)}`;
+  $('modelOptimalRate').textContent = `$${optimalRate.toFixed(2)}`;
   $('yourRate').textContent = `$${Math.abs(taxRate).toFixed(2)}`;
   $('modelAnswerBanner').hidden = false;
 
@@ -461,39 +463,29 @@ async function showRevealScreen(round) {
     showRevenue: true,
     showBurden: true,
     showLabels: true,
-    isSubsidy: round.isSubsidy,
   });
 
-  // Schedule table — after tax/subsidy (Issue 2)
+  // Schedule table — after tax (Issue 2)
   const afterSchedule = generateSchedule(round, taxRate);
   const afterHead = $('scheduleAfterHead');
-  const colName = round.isSubsidy ? 'Qs after subsidy (units)' : 'Qs after tax (units)';
-  afterHead.innerHTML = `<tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th><th>${colName}</th></tr>`;
-  $('scheduleAfterTitle').textContent = round.isSubsidy
-    ? 'After Subsidy: Demand & Supply Schedule'
-    : 'After Tax: Demand & Supply Schedule';
+  afterHead.innerHTML = '<tr><th>P ($)</th><th>Qd (units)</th><th>Qs (units)</th><th>Qs after tax (units)</th></tr>';
+  $('scheduleAfterTitle').textContent = 'After Tax: Demand & Supply Schedule';
   renderScheduleTable($('scheduleAfterBody'), afterSchedule, true);
 
-  // Results grid (Issue 9: subsidy terminology)
-  $('resultTaxRateLabel').textContent = round.isSubsidy ? 'Your Subsidy Rate' : 'Your Tax Rate';
+  // Results grid
+  $('resultTaxRateLabel').textContent = 'Your Tax Rate';
   $('resultTaxRate').textContent = `$${Math.abs(taxRate).toFixed(2)}`;
   $('resultPc').textContent = `$${result.newEquilibrium.Pc.toFixed(2)}`;
   $('resultPs').textContent = `$${result.newEquilibrium.Ps.toFixed(2)}`;
   $('resultQt').textContent = result.newEquilibrium.Q.toFixed(1);
 
-  if (round.isSubsidy) {
-    $('resultRevenueLabel').textContent = 'Gov Expenditure';
-    $('resultRevenue').textContent = `$${result.govCost.toFixed(2)}`;
-    $('resultTarget').textContent = round.subsidyBudgetLabel;
-  } else {
-    $('resultRevenueLabel').textContent = 'Gov Revenue';
-    $('resultRevenue').textContent = `$${result.revenue.toFixed(2)}`;
-    $('resultTarget').textContent = round.revenueTargetLabel;
-  }
+  $('resultRevenueLabel').textContent = 'Gov Revenue';
+  $('resultRevenue').textContent = `$${result.revenue.toFixed(2)}`;
+  $('resultTarget').textContent = round.revenueTargetLabel;
 
-  // Burden / benefit bar (Issue 9)
-  $('burdenSectionTitle').textContent = round.isSubsidy ? 'Subsidy Benefit Split' : 'Tax Burden Split';
-  drawBurdenBar($('burdenBarCanvas'), result.consumerBurdenPct, round.isSubsidy);
+  // Burden bar
+  $('burdenSectionTitle').textContent = 'Tax Burden Split';
+  drawBurdenBar($('burdenBarCanvas'), result.consumerBurdenPct);
 
   // Prediction section
   const predSection = $('predictionSection');
@@ -541,7 +533,7 @@ async function showFinalResults() {
   showScreen('final');
 
   const allScores = {};
-  for (let r = 1; r <= 4; r++) {
+  for (let r = 1; r <= TOTAL_ROUNDS; r++) {
     const round = ROUNDS[r];
     if (!round) continue;
     const submissions = await get(`submissions/${r}`) || {};

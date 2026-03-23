@@ -147,26 +147,7 @@ export function computeOptimalRate(roundConfig) {
   const k = a - c; // demand-supply intercept gap
   const s = b + d; // sum of slopes
 
-  if (roundConfig.isSubsidy) {
-    const qTarget = roundConfig.quantityTarget || 0;
-    const budget = roundConfig.subsidyBudget || Infinity;
-    const Q0 = k / s;
-
-    // Quantity constraint: subsidy >= qTarget * s (since ΔQ = subsidy / s)
-    const minForQty = qTarget * s;
-
-    // Budget constraint: subsidy * (Q0 + subsidy/s) <= budget
-    // subsidy^2/s + Q0*subsidy - budget <= 0
-    // Solving: subsidy = (-Q0*s + sqrt(Q0^2*s^2 + 4*budget*s)) / 2
-    const maxForBudget = (-Q0 * s + Math.sqrt(Q0 * Q0 * s * s + 4 * budget * s)) / 2;
-
-    if (minForQty <= maxForBudget) {
-      return round2(minForQty);
-    }
-    return round2(maxForBudget);
-  }
-
-  // Tax rounds — find minimum tax to hit revenue target
+  // Find minimum tax to hit revenue target
   if (roundConfig.revenueTarget != null) {
     const R = roundConfig.revenueTarget;
     // Revenue = t * (k - t) / s = R

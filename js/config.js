@@ -2,6 +2,7 @@
 // All round parameters, targets, and constants
 
 export const TOTAL_GROUPS = 16;
+export const TOTAL_ROUNDS = 3;
 
 // Firebase configuration — replace with your project's config before deployment
 export const FIREBASE_CONFIG = {
@@ -197,64 +198,6 @@ export const ROUNDS = [
     },
     hasBurdenPrediction: true,
     timeLimit: 120,
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // Bonus Round: Transport Subsidy — Inelastic D, Very Inelastic S
-  // ═══════════════════════════════════════════════════════════════
-  // Pd = 24 - 1Q,  Ps = -11 + 1.5Q
-  // Q₀ = (24+11)/2.5 = 14,  P₀ = 24 - 14 = 10
-  // Consumer benefit = b/(b+d) = 1/2.5 = 40%
-  // Producer benefit = d/(b+d) = 1.5/2.5 = 60% ← operators capture more
-  //
-  // PED = 10/(1×14) = 0.714 → inelastic ✓
-  // PES = 10/(1.5×14) = 0.476 → very inelastic ✓
-  // P₀ = 10 < 12 = a/2 → lower half ✓ (HKDSE: PED < 1)
-  // c = -11 < 0 → inelastic supply ✓
-  //
-  // "The Subsidy Trap": producers capture 60% of subsidy benefit
-  // because supply is more inelastic than demand.
-  //
-  // Model answer s = $5 (subsidy):
-  //   Qs = (35+5)/2.5 = 16,  Pc = 24-16 = 8,  Ps = 8+5 = 13
-  //   Gov cost = 5 × 16 = $80 (exactly meets budget)
-  //   ΔQ = 2 ≥ 2 target ✓
-  //   All values are integers ✓
-  //
-  // Clean-value check: Qs shifts by 0.4/$ subsidy, Pc by 0.4/$, Ps by 0.6/$
-  {
-    id: 4,
-    title: 'The Subsidy Trap',
-    subtitle: 'Elderly Minibus Subsidy',
-    market: 'Minibus fares for elderly',
-    scenario: 'The government wants to subsidise minibus fares for elderly passengers. A ride currently costs around HK$10. Set a per-ride subsidy to increase ridership. But who really benefits — the elderly or the operators?',
-    demandClue: 'Elderly residents rely heavily on minibuses for daily errands — they have very limited alternatives and will keep riding regardless of small price changes.',
-    supplyClue: 'Minibus operators face strict licensing regulations and high fixed costs — it is very difficult to add more routes or vehicles, even when demand rises.',
-    demandElasticity: 'inelastic',
-    supplyElasticity: 'very inelastic',
-    unit: 'HK$ per ride (subsidy)',
-    a: 24,
-    b: 1,
-    c: -11,
-    d: 1.5,
-    // Equilibrium: Q₀ = 14, P₀ = $10
-    scheduleMin: 4,
-    scheduleMax: 16,
-    scheduleStep: 1,
-    sliderMin: 1,
-    sliderMax: 5,
-    sliderStep: 1,
-    sliderDefault: 2,
-    revenueTarget: null,
-    subsidyBudget: 80,
-    subsidyBudgetLabel: 'HK$80',
-    quantityTarget: 2,
-    quantityTargetLabel: 'Increase ridership by at least 2 rides',
-    secondaryTarget: null,
-    hasBurdenPrediction: true,
-    burdenPredictionLabel: 'Who benefits more from the subsidy?',
-    isSubsidy: true,
-    timeLimit: null,
   },
 ];
 

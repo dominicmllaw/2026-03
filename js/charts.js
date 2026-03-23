@@ -1,7 +1,7 @@
 // Tax Adviser Arena — Charts & S/D Diagram Renderer
 // Uses Canvas API for S/D diagrams, Chart.js for scatter/bar charts
 
-import { COLOURS } from './config.js';
+import { COLOURS, ROUNDS } from './config.js';
 import { generateCurvePoints, simulate } from './simulation.js';
 
 // ── S/D Diagram (Canvas) ──
@@ -372,9 +372,16 @@ export function renderLeaderboard(canvas, leaderboard, maxShow = 8) {
   const shown = leaderboard.slice(0, maxShow);
   const labels = shown.map(e => `Group ${e.group}`);
 
-  const roundKeys = ['1', '2', '3', '4'];
-  const roundColours = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6'];
-  const roundLabels = ['R1: Tobacco', 'R2: Drinks', 'R3: Bags', 'R4: Subsidy'];
+  const palette = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899'];
+  const roundKeys = [];
+  const roundColours = [];
+  const roundLabels = [];
+  for (let i = 1; i < ROUNDS.length; i++) {
+    if (!ROUNDS[i]) continue;
+    roundKeys.push(String(i));
+    roundColours.push(palette[(i - 1) % palette.length]);
+    roundLabels.push(`R${i}: ${ROUNDS[i].subtitle.split(' ')[0]}`);
+  }
 
   const datasets = roundKeys.map((key, i) => ({
     label: roundLabels[i],

@@ -40,7 +40,7 @@
         <!-- Section 1: How This Game Works -->
         <div class="intro-section" id="introSection1">
           <h2>How This Game Works</h2>
-          <p>You are a government tax adviser. In each round, you will see a Hong Kong market. Your job is to set a unit tax (or subsidy) rate to hit the government's revenue target while managing the burden on consumers and producers.</p>
+          <p>You are a government tax adviser. In each round, you will see a Hong Kong market. Your job is to set a unit tax rate to hit the government's revenue target while managing the burden on consumers and producers.</p>
           <p>Choose wisely — the market's <strong>elasticity</strong> will determine who really pays!</p>
         </div>
 
@@ -62,11 +62,11 @@
             </div>
             <div class="guide-item">
               <span class="guide-number">4</span>
-              <div><strong>Tax/Subsidy Slider</strong> — Your main decision. Slide to set the per-unit tax or subsidy rate.</div>
+              <div><strong>Tax Slider</strong> — Your main decision. Slide to set the per-unit tax rate.</div>
             </div>
             <div class="guide-item">
               <span class="guide-number">5</span>
-              <div><strong>Burden/Benefit Slider</strong> — In Rounds 2–4, predict what percentage of the tax burden (or subsidy benefit) falls on consumers.</div>
+              <div><strong>Burden Slider</strong> — In Rounds 2–3, predict what percentage of the tax burden falls on consumers.</div>
             </div>
             <div class="guide-item">
               <span class="guide-number">6</span>
@@ -84,7 +84,7 @@
           <h2>How to Score High</h2>
           <ul class="scoring-guide-list">
             <li><strong>Hit the revenue target</strong> as closely as possible — up to <strong>40 points</strong></li>
-            <li>In Rounds 2–4: <strong>predict the burden/benefit split</strong> accurately — up to <strong>20 points</strong></li>
+            <li>In Rounds 2–3: <strong>predict the burden split</strong> accurately — up to <strong>20 points</strong></li>
             <li>Give a good <strong>economic justification</strong> — up to <strong>20 points</strong> (scored by your teacher)</li>
             <li>Round 3 has a <strong>bonus secondary target</strong> worth up to <strong>20 extra points</strong></li>
           </ul>
@@ -208,7 +208,7 @@
           </div>
         </div>
 
-        <!-- Burden Prediction (Rounds 2-4) -->
+        <!-- Burden Prediction (Rounds 2-3) -->
         <div class="slider-group" id="burdenPredictionGroup" hidden>
           <label for="burdenSlider" id="burdenSliderLabel">Predict: what % of this tax will consumers bear?</label>
           <div class="slider-value-display">
@@ -291,7 +291,7 @@
           <canvas id="sdReveal" width="500" height="300"></canvas>
         </div>
 
-        <!-- Schedule table (after tax/subsidy) -->
+        <!-- Schedule table (after tax) -->
         <div class="schedule-section" id="scheduleAfterSection">
           <h4 id="scheduleAfterTitle">After Tax: Demand &amp; Supply Schedule</h4>
           <table class="schedule-table" id="scheduleAfterTable">

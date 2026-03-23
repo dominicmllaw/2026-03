@@ -33,32 +33,6 @@ export function scoreSubmission(roundConfig, submission, simResult) {
     else breakdown.revenue = 0;
   }
 
-  // For subsidy rounds: score based on quantity target and budget
-  if (roundConfig.isSubsidy) {
-    breakdown.revenue = 0; // Reset — use subsidy-specific scoring
-    const quantityTarget = roundConfig.quantityTarget || 0;
-    const budget = roundConfig.subsidyBudget || Infinity;
-    const qChange = Math.abs(simResult.quantityChange);
-    const cost = simResult.govCost;
-
-    // Quantity target (0–20)
-    if (qChange >= quantityTarget) {
-      breakdown.revenue += 20;
-    } else {
-      breakdown.revenue += Math.round((qChange / quantityTarget) * 20);
-    }
-
-    // Budget adherence (0–20)
-    if (cost <= budget) {
-      breakdown.revenue += 20;
-    } else {
-      const overBudgetPct = ((cost - budget) / budget) * 100;
-      if (overBudgetPct <= 10) breakdown.revenue += 15;
-      else if (overBudgetPct <= 25) breakdown.revenue += 10;
-      else if (overBudgetPct <= 50) breakdown.revenue += 5;
-    }
-  }
-
   // ── 2. Secondary target (0–20 points, Round 3 only) ──
   if (roundConfig.secondaryTarget) {
     const st = roundConfig.secondaryTarget;
@@ -76,7 +50,7 @@ export function scoreSubmission(roundConfig, submission, simResult) {
     }
   }
 
-  // ── 3. Burden prediction accuracy (0–20 points, Rounds 2–4) ──
+  // ── 3. Burden prediction accuracy (0–20 points, Rounds 2–3) ──
   if (roundConfig.hasBurdenPrediction && submission.burdenPrediction != null) {
     const predicted = submission.burdenPrediction;
     const actual = simResult.consumerBurdenPct;
