@@ -103,53 +103,58 @@ export const ROUNDS = [
   // ═══════════════════════════════════════════════════════════════
   // Round 2: Sugary Drinks Tax — Elastic Demand, Inelastic Supply
   // ═══════════════════════════════════════════════════════════════
-  // Pd = 110 - 2Q,  Ps = -15 + 3Q
-  // Q₀ = (110+15)/5 = 25,  P₀ = 110 - 50 = 60
-  // Consumer burden = b/(b+d) = 2/5 = 40%
-  // PED = 60/(2×25) = 1.20 → elastic ✓
-  // PES = 60/(3×25) = 0.80 → inelastic ✓
-  // P₀ = 60 > 55 = a/2 → upper half ✓ (HKDSE: PED > 1)
-  // c = -15 < 0 → inelastic supply ✓
+  // Inverse demand: Pd = 80 - 2.5Q   → Direct: Qd = 32 - 0.4P
+  // Inverse supply: Ps = -10 + 5Q    → Direct: Qs = 2 + 0.2P  (wait: Qs=(P+10)/5=-(-10)/5+P/5 = 2+0.2P)
   //
-  // "The Surprise": same target as R1 ($330), same optimal tax ($15),
-  // but burden is only 40% on consumers vs 80% in R1!
+  // Q₀ = (80+10)/(2.5+5) = 90/7.5 = 12,  P₀ = 80 - 2.5×12 = $50
+  // Producer burden = d/(b+d) = 5/7.5 = 2/3 ≈ 67%
+  // PED = 50/(2.5×12) = 50/30 ≈ 1.67 → elastic ✓
+  // PES = 50/(5×12) = 50/60 ≈ 0.83 → inelastic ✓
+  // P₀ = 50 > 40 = a/2 → upper half ✓ (HKDSE: PED > 1)
+  // c = -10 < 0 → inelastic supply ✓
   //
-  // Model answer t = $15:
-  //   Qt = (125-15)/5 = 22,  Pc = 110-44 = 66,  Ps = 51
-  //   Revenue = 15 × 22 = $330  ← same target as R1
-  //   Consumer price rise = $6 (40% of $15) ✓
-  //   All values are integers ✓
+  // Integer check (b=2.5, d=5, a=80, c=-10, price step=$5):
+  //   Qd = (80-P)/2.5 → integer for all P = 5k (since 80-P is multiple of 5, 5/2.5=2) ✓
+  //   Qs = (P+10)/5  → integer for all P = 5k (since P+10 is multiple of 5) ✓
   //
-  // Clean-value check: Qt shifts by 0.2/$ tax, Pc by 0.4/$, Ps by 0.6/$
+  // "The Surprise": same optimal tax as R1 ($15), but producers bear most of the burden!
+  //
+  // Model answer t = $15 (multiple of $5 ✓):
+  //   Qt = (90-15)/7.5 = 10,  Pc = 80-25 = $55,  Ps = $40
+  //   Revenue = 15 × 10 = $150  ← target
+  //   Consumer price rise = $5 (1/3 of $15) ✓
+  //   Producer price fall = $10 (2/3 of $15) ✓
+  //   After-tax equilibrium Pc = $55 is on table row ✓
+  //   Qs after-tax column = original Qs shifted down 3 rows (15÷5=3) ✓
   {
     id: 2,
     title: 'The Surprise',
     subtitle: 'Sugary Drinks Tax',
     market: 'Bottled soft drinks',
-    scenario: 'Hong Kong is considering a sugar tax on bottled soft drinks. A bottle currently costs around HK$60. The government wants to raise the same revenue target as Round 1.',
+    scenario: 'Hong Kong is considering a sugar tax on bottled soft drinks. A bottle currently costs around HK$50. The government wants to raise revenue from this market.',
     demandClue: 'Consumers can easily switch to water, tea, or sugar-free alternatives — demand is very responsive to price changes.',
     supplyClue: 'Bottling companies have committed to expensive factory equipment and long-term sugar contracts — it is very difficult to change output levels.',
     demandElasticity: 'elastic',
     supplyElasticity: 'very inelastic',
     unit: 'HK$ per bottle',
-    a: 110,
-    b: 2,
-    c: -15,
-    d: 3,
-    // Equilibrium: Q₀ = 25, P₀ = $60
-    scheduleMin: 40,
-    scheduleMax: 80,
+    a: 80,
+    b: 2.5,
+    c: -10,
+    d: 5,
+    // Equilibrium: Q₀ = 12, P₀ = $50
+    scheduleMin: 30,
+    scheduleMax: 70,
     scheduleStep: 5,
-    sliderMin: 1,
-    sliderMax: 15,
-    sliderStep: 1,
+    sliderMin: 5,
+    sliderMax: 25,
+    sliderStep: 5,
     sliderDefault: 5,
-    revenueTarget: 330,
-    revenueTargetLabel: 'HK$330',
+    revenueTarget: 150,
+    revenueTargetLabel: 'HK$150',
     secondaryTarget: null,
     hasBurdenPrediction: true,
     timeLimit: null,
-    sliderZones: { green: [1, 10], amber: [11, 13], red: [14, 15] },
+    sliderZones: { green: [15, 15], amber: [10, 20], red: [5, 25] },
   },
 
   // ═══════════════════════════════════════════════════════════════
