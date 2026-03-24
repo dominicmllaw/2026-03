@@ -158,58 +158,67 @@ export const ROUNDS = [
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Round 3: Plastic Bag Levy — Equal Elasticities (both > 1)
+  // Round 3: Plastic Bag Levy — Moderate-High Elastic Demand, Highly Elastic Supply
   // ═══════════════════════════════════════════════════════════════
-  // Pd = 22 - 1Q,  Ps = 2 + 1Q
-  // Q₀ = (22-2)/2 = 10,  P₀ = 22 - 10 = 12
-  // Consumer burden = b/(b+d) = 1/2 = 50%
-  // PED = 12/(1×10) = 1.20 → elastic ✓
-  // PES = 12/(1×10) = 1.20 → elastic ✓
-  // b = d → exactly symmetric → exactly 50/50 burden split ✓
-  // c = 2 > 0 → elastic supply ✓
+  // Inverse demand: Pd = 50 - 2Q   → Direct: Qd = 25 - 0.5P
+  // Inverse supply: Ps = 20 + 1Q   → Direct: Qs = -20 + P
   //
-  // "Boss Round": must hit revenue target AND keep price increase low.
+  // Q₀ = (50-20)/(2+1) = 30/3 = 10,  P₀ = 50 - 2×10 = $30
+  // Consumer burden = b/(b+d) = 2/3 ≈ 67%
+  // PED = 30/(2×10) = 1.50 → moderate-high elastic ✓
+  // PES = 30/(1×10) = 3.00 → highly elastic ✓
+  // P₀ = 30 > 25 = a/2 → upper half ✓ (HKDSE: PED > 1)
+  // c = 20 > 0 → elastic supply ✓
   //
-  // Model answer t = $2:
-  //   Qt = (20-2)/2 = 9,  Pc = 22-9 = 13,  Ps = 11
-  //   Revenue = 2 × 9 = $18  ← target
-  //   ΔPc = $1 ≤ $1.50 secondary target ✓
-  //   All values are integers ✓
+  // Key insight: highly elastic supply means producers easily exit → burden falls on CONSUMERS
+  // even though demand is also elastic. The dual target forces students to balance both goals.
   //
-  // Clean-value check: Qt shifts by 0.5/$ tax, Pc by 0.5/$, Ps by 0.5/$
+  // Integer check (b=2, d=1, a=50, c=20, price step=$2):
+  //   Qd = (50-P)/2 → integer for all P = even ✓
+  //   Qs = P-20     → integer for all integer P ✓
+  //
+  // "The Speed Round": DUAL TARGET — hit revenue AND keep consumer price rise ≤ $4.
+  //
+  // Model answer t = $6 (multiple of $2 ✓):
+  //   Qt = (30-6)/3 = 8,  Pc = 50-16 = $34,  Ps = $28
+  //   Revenue = 6 × 8 = $48  ← primary target (binding)
+  //   ΔPc = $4 = 2/3 × $6 ≤ $4 ← secondary target (binding)
+  //   Both targets hit simultaneously — any higher tax violates the price cap ✓
+  //   After-tax equilibrium Pc = $34 is on table row ✓
+  //   Qs after-tax column = original Qs shifted down 3 rows (6÷2=3) ✓
   {
     id: 3,
-    title: 'The Boss Round',
+    title: 'The Speed Round',
     subtitle: 'Plastic Bag Levy',
-    market: 'Plastic shopping bags',
-    scenario: 'Hong Kong wants to further increase its plastic bag levy. A bag currently has a market price of about HK$12. You must hit TWO targets: raise enough revenue AND keep the consumer price increase manageable.',
-    demandClue: 'Many shoppers already bring reusable bags — demand is quite responsive to price changes.',
-    supplyClue: 'Plastic bags are extremely cheap to produce and producers can easily adjust output — supply is also very responsive.',
-    demandElasticity: 'elastic',
-    supplyElasticity: 'elastic',
-    unit: 'HK$ per bag',
-    a: 22,
-    b: 1,
-    c: 2,
+    market: 'Plastic carrier bags (per pack)',
+    scenario: 'Hong Kong wants to raise its plastic bag levy. Packs currently sell for about HK$30. You must hit TWO targets simultaneously: raise enough revenue AND keep the consumer price increase manageable. Clock is ticking!',
+    demandClue: 'Many shoppers already carry reusable bags and can easily switch — demand is moderately responsive to price changes.',
+    supplyClue: 'Plastic bag manufacturers can scale output up or down almost instantly — supply is extremely responsive to price.',
+    demandElasticity: 'moderately elastic',
+    supplyElasticity: 'highly elastic',
+    unit: 'HK$ per pack',
+    a: 50,
+    b: 2,
+    c: 20,
     d: 1,
-    // Equilibrium: Q₀ = 10, P₀ = $12
-    scheduleMin: 5,
-    scheduleMax: 18,
-    scheduleStep: 1,
-    sliderMin: 1,
-    sliderMax: 5,
-    sliderStep: 1,
-    sliderDefault: 1,
-    revenueTarget: 18,
-    revenueTargetLabel: 'HK$18',
+    // Equilibrium: Q₀ = 10, P₀ = $30
+    scheduleMin: 20,
+    scheduleMax: 40,
+    scheduleStep: 2,
+    sliderMin: 2,
+    sliderMax: 12,
+    sliderStep: 2,
+    sliderDefault: 2,
+    revenueTarget: 48,
+    revenueTargetLabel: 'HK$48',
     secondaryTarget: {
       type: 'maxPriceIncrease',
-      value: 1.5,
-      label: 'Keep consumer price increase below HK$1.50',
+      value: 4,
+      label: 'Keep consumer price increase at or below HK$4',
     },
     hasBurdenPrediction: true,
-    timeLimit: 120,
-    sliderZones: { green: [1, 2], amber: [3, 4], red: [5, 5] },
+    timeLimit: 90,
+    sliderZones: { green: [6, 6], amber: [4, 8], red: [2, 12] },
   },
 
   // ═══════════════════════════════════════════════════════════════
