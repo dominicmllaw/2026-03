@@ -217,7 +217,8 @@ function pollGameState() {
     // Issue 15: teacher-synced tutorial slide
     if (state.tutorialSlide != null && state.tutorialSlide !== currentTutorialSlide) {
       currentTutorialSlide = state.tutorialSlide;
-      if (screens.intro.classList.contains('active')) {
+      if (currentRound === 0) {
+        showScreen('intro');
         showTutorialSlide(currentTutorialSlide);
       }
     }
@@ -240,7 +241,8 @@ function pollGameState() {
     // Issue 15: teacher-synced tutorial slide
     if (state.tutorialSlide != null && state.tutorialSlide !== currentTutorialSlide) {
       currentTutorialSlide = state.tutorialSlide;
-      if (screens.intro.classList.contains('active')) {
+      if (currentRound === 0) {
+        showScreen('intro');
         showTutorialSlide(currentTutorialSlide);
       }
     }

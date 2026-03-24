@@ -9,6 +9,7 @@ let useFirebase = false;
 const LS_PREFIX = 'taa_';
 const listeners = new Map(); // path → Set<callback>
 let pollInterval = null;
+let bc = null; // BroadcastChannel for cross-tab instant sync
 
 /**
  * Initialise the database. Tries Firebase first, falls back to localStorage.
@@ -71,7 +72,26 @@ export async function set(path, value) {
       localStorage.setItem(rootKey, JSON.stringify(rootObj));
     }
 
-    notifyListeners(path, value);
+    // Build the set of notifications to dispatch: always child path,
+    // and always the merged root object if this was a child path so that
+    // all onValue('game', …) listeners see the update immediately.
+    const notifications = [{ path, value }];
+    if (parts.length > 1) {
+      const rootKey = LS_PREFIX + parts[0];
+      const rootRaw = localStorage.getItem(rootKey);
+      if (rootRaw) {
+        try { notifications.push({ path: parts[0], value: JSON.parse(rootRaw) }); } catch {}
+      }
+    }
+
+    // Same-tab: fire via CustomEvent so any async listeners also catch it
+    for (const n of notifications) {
+      window.dispatchEvent(new CustomEvent('taa-db-change', { detail: n }));
+    }
+    // Other tabs: BroadcastChannel
+    if (bc) {
+      for (const n of notifications) bc.postMessage(n);
+    }
   }
 }
 
@@ -184,16 +204,35 @@ function notifyListeners(path, value) {
 }
 
 function startLocalStoragePoll() {
-  // Primary: use the native 'storage' event for instant cross-tab sync.
-  // The 'storage' event fires in OTHER tabs when localStorage changes.
+  // Primary cross-tab sync: BroadcastChannel (fires in other tabs instantly)
+  try {
+    bc = new BroadcastChannel('taa_sync');
+    bc.onmessage = (e) => {
+      const { path, value } = e.data;
+      console.log('[DB] BroadcastChannel received — path:', path);
+      notifyListeners(path, value);
+    };
+  } catch (e) {
+    console.warn('[DB] BroadcastChannel not available:', e);
+  }
+
+  // Primary same-tab sync: CustomEvent (dispatched by set())
+  window.addEventListener('taa-db-change', (e) => {
+    const { path, value } = e.detail;
+    console.log('[DB] CustomEvent taa-db-change — path:', path);
+    notifyListeners(path, value);
+  });
+
+  // Fallback cross-tab: storage event (fires in OTHER tabs; used when BroadcastChannel unavailable)
   window.addEventListener('storage', (e) => {
     if (!e.key || !e.key.startsWith(LS_PREFIX)) return;
+    if (bc) return; // BroadcastChannel already handles cross-tab
     const path = e.key.slice(LS_PREFIX.length).replace(/\./g, '/');
     let value = null;
     if (e.newValue !== null) {
       try { value = JSON.parse(e.newValue); } catch { return; }
     }
-    console.log('[DB] storage event — path:', path, 'value:', value);
+    console.log('[DB] storage event (fallback) — path:', path, 'value:', value);
     notifyListeners(path, value);
   });
 
