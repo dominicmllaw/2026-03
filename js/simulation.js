@@ -239,11 +239,27 @@ export function computeOptimalRate(roundConfig) {
 /**
  * Generate a demand/supply schedule table for a round.
  *
+ * Prices are taken from config scheduleMin/scheduleMax/scheduleStep (fixed rows).
+ * No extra rows are ever added for after-tax equilibria.
+ *
+ * The 'qsAfter' column is the original Qs column shifted down by
+ * (taxRate ÷ scheduleStep) rows — equivalent to evaluating Qs at price (P − tax).
+ * Top cells that shift off the table are null (display as '—').
+ *
  * @param {Object} roundConfig
  * @param {number} taxRate - 0 for before-tax schedule, nonzero for after-tax
  * @returns {Array} Rows of { p, qd, qs, qsAfter?, isEquilibrium, isNewEquilibrium? }
  */
 export function generateSchedule(roundConfig, taxRate = 0) {
+  // ── Build fixed price list from config ──
+  function buildPrices(min, max, step) {
+    const prices = [];
+    for (let p = min; p <= max + 1e-9; p += step) {
+      prices.push(round1(p));
+    }
+    return prices;
+  }
+
   // ── Perfectly inelastic demand ──
   if (roundConfig.perfectlyInelastic) {
     const { c, d, fixedQuantity } = roundConfig;
@@ -251,24 +267,29 @@ export function generateSchedule(roundConfig, taxRate = 0) {
     const P0 = round2(c + d * Q0);
     const Pc = round2(P0 + taxRate);
 
-    // Generate prices around equilibrium
-    let prices = roundConfig.schedulePrices
-      ? [...roundConfig.schedulePrices]
-      : autoSchedulePrices(P0, P0 * 2.5, c);
+    const prices = (roundConfig.scheduleMin != null)
+      ? buildPrices(roundConfig.scheduleMin, roundConfig.scheduleMax, roundConfig.scheduleStep)
+      : (() => {
+          const ps = autoSchedulePrices(P0, P0 * 2.5, c);
+          if (!ps.some(p => Math.abs(p - P0) < 0.05)) ps.push(P0);
+          ps.sort((x, y) => x - y);
+          return ps;
+        })();
 
-    if (!prices.some(p => Math.abs(p - P0) < 0.05)) prices.push(P0);
-    if (taxRate !== 0 && !prices.some(p => Math.abs(p - Pc) < 0.05)) prices.push(Pc);
-    prices.sort((x, y) => x - y);
+    const qsValues = prices.map(p => round1(Math.max(0, (p - c) / d)));
+    const shift = (taxRate !== 0 && roundConfig.scheduleStep)
+      ? Math.round(taxRate / roundConfig.scheduleStep)
+      : 0;
 
-    return prices.map(p => {
+    return prices.map((p, i) => {
       const row = {
         p: round1(p),
-        qd: round1(Q0), // always Q0 — perfectly inelastic
-        qs: round1(Math.max(0, (p - c) / d)),
+        qd: round1(Q0),
+        qs: qsValues[i],
         isEquilibrium: Math.abs(p - P0) < 0.05,
       };
       if (taxRate !== 0) {
-        row.qsAfter = round1(Math.max(0, (p - c - taxRate) / d));
+        row.qsAfter = i >= shift ? qsValues[i - shift] : null;
         row.isNewEquilibrium = Math.abs(p - Pc) < 0.05;
       }
       return row;
@@ -280,42 +301,47 @@ export function generateSchedule(roundConfig, taxRate = 0) {
   const Q0 = (a - c) / (b + d);
   const P0 = round2(a - b * Q0);
 
-  // Use config-defined prices or auto-generate
-  let prices = roundConfig.schedulePrices
-    ? [...roundConfig.schedulePrices]
-    : autoSchedulePrices(P0, a, c);
-
-  // Ensure equilibrium price is included
-  if (!prices.some(p => Math.abs(p - P0) < 0.05)) {
-    prices.push(P0);
+  // Fixed price list — no rows added for after-tax equilibrium
+  let prices;
+  if (roundConfig.schedulePrices) {
+    prices = [...roundConfig.schedulePrices];
+  } else if (roundConfig.scheduleMin != null) {
+    prices = buildPrices(roundConfig.scheduleMin, roundConfig.scheduleMax, roundConfig.scheduleStep);
+  } else {
+    // Legacy fallback (rounds without scheduleMin/Max/Step)
+    prices = autoSchedulePrices(P0, a, c);
+    if (!prices.some(p => Math.abs(p - P0) < 0.05)) prices.push(P0);
+    prices.sort((x, y) => x - y);
   }
 
-  // For after-tax, also include the new consumer price
+  // Pre-compute original Qs for all rows (used for shift)
+  const qsValues = prices.map(p => round1(Math.max(0, (p - c) / d)));
+
+  // Shift = how many rows the Qs column moves down for the after-tax table
+  const shift = (taxRate !== 0 && roundConfig.scheduleStep)
+    ? Math.round(taxRate / roundConfig.scheduleStep)
+    : 0;
+
+  // After-tax new equilibrium price (for isNewEquilibrium flag only)
+  let Pc = null;
   if (taxRate !== 0) {
     const Qt = Math.max(0, (a - c - taxRate) / (b + d));
-    const Pc = round2(a - b * Qt);
-    if (Qt > 0 && !prices.some(p => Math.abs(p - Pc) < 0.05)) {
-      prices.push(Pc);
-    }
+    Pc = round2(a - b * Qt);
   }
 
-  prices.sort((x, y) => x - y);
-
-  return prices.map(p => {
-    const qd = Math.max(0, (a - p) / b);
-    const qs = Math.max(0, (p - c) / d);
+  return prices.map((p, i) => {
     const row = {
       p: round1(p),
-      qd: round1(qd),
-      qs: round1(qs),
+      qd: round1(Math.max(0, (a - p) / b)),
+      qs: qsValues[i],
       isEquilibrium: Math.abs(p - P0) < 0.05,
     };
 
     if (taxRate !== 0) {
-      row.qsAfter = round1(Math.max(0, (p - c - taxRate) / d));
-      const Qt = Math.max(0, (a - c - taxRate) / (b + d));
-      const Pc = a - b * Qt;
-      row.isNewEquilibrium = Math.abs(p - Pc) < 0.05;
+      // qsAfter is original Qs shifted down by 'shift' rows;
+      // top cells that fall off become null (rendered as '—')
+      row.qsAfter = i >= shift ? qsValues[i - shift] : null;
+      row.isNewEquilibrium = Pc !== null && Math.abs(p - Pc) < 0.05;
     }
 
     return row;

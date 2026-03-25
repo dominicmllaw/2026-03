@@ -49,51 +49,55 @@ export const ROUNDS = [
   // ═══════════════════════════════════════════════════════════════
   // Round 1: Tobacco Tax — Inelastic Demand, Elastic Supply
   // ═══════════════════════════════════════════════════════════════
-  // Pd = 130 - 4Q,  Ps = 5 + 1Q
-  // Q₀ = (130-5)/5 = 25,  P₀ = 130 - 100 = 30
-  // Consumer burden = b/(b+d) = 4/5 = 80%
-  // PED = 30/(4×25) = 0.30 → inelastic ✓
-  // PES = 30/(1×25) = 1.20 → elastic ✓
-  // P₀ = 30 < 65 = a/2 → lower half ✓ (HKDSE: PED < 1)
-  // c = 5 > 0 → elastic supply ✓
+  // Inverse demand: Pd = 90 - 5Q   → Direct: Qd = 18 - 0.2P
+  // Inverse supply: Ps = 7.5 + 2.5Q → Direct: Qs = -3 + 0.4P
   //
-  // Model answer t = $15:
-  //   Qt = (125-15)/5 = 22,  Pc = 130-88 = 42,  Ps = 27
-  //   Revenue = 15 × 22 = $330  ← target
-  //   Consumer price rise = $12 (80% of $15) ✓
-  //   All values are integers ✓
+  // Q₀ = (90-7.5)/(5+2.5) = 82.5/7.5 = 11,  P₀ = 90 - 5×11 = $35
+  // Consumer burden = b/(b+d) = 5/7.5 = 2/3 ≈ 67%
+  // PED = 35/(5×11) = 35/55 ≈ 0.64 → inelastic ✓
+  // PES = 35/(2.5×11) = 35/27.5 ≈ 1.27 → elastic ✓
+  // P₀ = 35 < 45 = a/2 → lower half ✓ (HKDSE: PED < 1)
+  // c = 7.5 > 0 → elastic supply ✓
   //
-  // Clean-value check: Qt shifts by 0.2/$ tax, Pc by 0.8/$, Ps by 0.2/$
-  // All one-decimal for every integer tax rate ✓
+  // Integer check (b=5, d=2.5, a=90, c=7.5, price step=$5):
+  //   Qd = (90-P)/5 → integer for all P = 5k ✓
+  //   Qs = (P-7.5)/2.5 → integer for all P = 5k (since P-7.5 is multiple of 2.5) ✓
+  //
+  // Model answer t = $15 (multiple of $5 ✓):
+  //   Qt = (82.5-15)/7.5 = 9,  Pc = 90-45 = $45,  Ps = $30
+  //   Revenue = 15 × 9 = $135  ← target
+  //   Consumer price rise = $10 (2/3 of $15) ✓
+  //   After-tax equilibrium Pc = $45 is on table row ✓
+  //   Qs after-tax column = original Qs shifted down 3 rows (15÷5=3) ✓
   {
     id: 1,
     title: 'The Easy Win',
     subtitle: 'Tobacco Tax',
     market: 'Cigarettes',
-    scenario: 'Hong Kong is considering an additional unit tax on cigarettes. A pack currently costs around HK$30. The government wants to raise revenue from this market.',
+    scenario: 'Hong Kong is considering an additional unit tax on cigarettes. A pack currently costs around HK$35. The government wants to raise revenue from this market.',
     demandClue: 'Research shows that most smokers find it extremely difficult to quit — cigarette demand is very unresponsive to price changes.',
     supplyClue: 'Tobacco companies can easily scale production up or down at low cost — supply is very responsive to price.',
     demandElasticity: 'inelastic',
     supplyElasticity: 'elastic',
     unit: 'HK$ per pack',
-    a: 130,
-    b: 4,
-    c: 5,
-    d: 1,
-    // Equilibrium: Q₀ = 25, P₀ = $30
-    scheduleMin: 10,
-    scheduleMax: 50,
+    a: 90,
+    b: 5,
+    c: 7.5,
+    d: 2.5,
+    // Equilibrium: Q₀ = 11, P₀ = $35
+    scheduleMin: 15,
+    scheduleMax: 55,
     scheduleStep: 5,
-    sliderMin: 1,
-    sliderMax: 20,
-    sliderStep: 1,
+    sliderMin: 5,
+    sliderMax: 30,
+    sliderStep: 5,
     sliderDefault: 5,
-    revenueTarget: 330,
-    revenueTargetLabel: 'HK$330',
+    revenueTarget: 135,
+    revenueTargetLabel: 'HK$135',
     secondaryTarget: null,
     hasBurdenPrediction: false,
     timeLimit: null,
-    sliderZones: { green: [1, 12], amber: [13, 17], red: [18, 20] },
+    sliderZones: { green: [15, 15], amber: [10, 20], red: [5, 30] },
   },
 
   // ═══════════════════════════════════════════════════════════════

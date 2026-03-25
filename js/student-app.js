@@ -126,7 +126,9 @@ function joinGame() {
 }
 
 // ── Practice Round (Issue 13) ──
-const PRACTICE_CONFIG = { a: 100, b: 1, c: 0, d: 1 };
+// scheduleMin/Max/Step defined so generateSchedule uses the row-shift method correctly.
+// Equilibrium: Q₀ = 50, P₀ = $50.  With step=10, shift = round(t/10) rows.
+const PRACTICE_CONFIG = { a: 100, b: 1, c: 0, d: 1, scheduleMin: 10, scheduleMax: 90, scheduleStep: 10 };
 // Equilibrium: Q₀ = 100/2 = 50, P₀ = 100 - 50 = 50
 
 function setupPracticeRound() {
@@ -299,6 +301,14 @@ async function handleStateChange() {
     }
   } else if (currentPhase === PHASE.REVEAL) {
     await showRevealScreen(round);
+  } else {
+    // PHASE.LOBBY between rounds — teacher pressed "Next Round"
+    clearInterval(timerInterval);
+    showScreen('waiting');
+    $('waitingTitle').textContent = 'Round Complete!';
+    $('waitingMessage').textContent = currentRound < TOTAL_ROUNDS
+      ? `Waiting for Round ${currentRound + 1} to start\u2026`
+      : 'Waiting for the final results\u2026';
   }
 }
 
@@ -393,12 +403,16 @@ function updateSliderZone(val, round) {
   if (!round.sliderZones || !zoneLabel) return;
 
   const zones = round.sliderZones;
-  let zone = 'green';
-  let label = 'Low';
-  if (val >= zones.red[0] && val <= zones.red[1]) {
-    zone = 'red'; label = 'High';
+  let zone, label;
+
+  // Check from narrowest to widest so the green "on-target" zone is not
+  // swallowed by the wider red/amber ranges.
+  if (val >= zones.green[0] && val <= zones.green[1]) {
+    zone = 'green'; label = 'On target';
   } else if (val >= zones.amber[0] && val <= zones.amber[1]) {
     zone = 'amber'; label = 'Moderate';
+  } else {
+    zone = 'red'; label = val < zones.amber[0] ? 'Too low' : 'Too high';
   }
 
   zoneLabel.textContent = label;
@@ -600,7 +614,7 @@ function renderScheduleTable(tbody, rows, showAfter) {
 
     let cells = `<td>${row.p}</td><td>${row.qd}</td><td>${row.qs}</td>`;
     if (showAfter && row.qsAfter !== undefined) {
-      cells += `<td>${row.qsAfter}</td>`;
+      cells += `<td>${row.qsAfter !== null ? row.qsAfter : '\u2014'}</td>`;
     }
     tr.innerHTML = cells;
     tbody.appendChild(tr);

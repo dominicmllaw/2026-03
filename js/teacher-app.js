@@ -110,6 +110,10 @@ function bindEvents() {
       allScores = {};
       manualScores = {};
       revealResults = {};
+      tutorialSlide = 0;
+      $('btnSkipTutorial').disabled = false;
+      $('btnSkipTutorial').textContent = 'Skip All';
+      updateTutorialUI();
       updateUI();
     }
   });
@@ -439,19 +443,24 @@ function showGroupResult(round, groupNum) {
 
 // ── Data Table (Issue 5C) ──
 
+// Format a dollar value: show as integer when value is a whole number.
+function fmtMoney(n) { return Number.isInteger(n) ? String(n) : n.toFixed(2); }
+// Format a quantity: show as integer when value is a whole number.
+function fmtQty(n)   { return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+
 function renderDataTable(round, result, taxRate) {
   const tbody = $('dataTableBody');
   const rows = [];
 
-  rows.push(['Original Price (P\u2080)', `$${result.freeMarket.P.toFixed(2)}`]);
-  rows.push(['Original Quantity (Q\u2080)', `${result.freeMarket.Q.toFixed(1)} units`]);
-  rows.push(['Tax per unit (t)', `$${Math.abs(taxRate).toFixed(2)}`]);
-  rows.push(['New Consumer Price (P\u2081)', `$${result.newEquilibrium.Pc.toFixed(2)}`]);
-  rows.push(['New Producer Price (P\u2082)', `$${result.newEquilibrium.Ps.toFixed(2)}`]);
-  rows.push(['New Quantity (Q\u2081)', `${result.newEquilibrium.Q.toFixed(1)} units`]);
-  rows.push(['Tax Revenue (t \u00d7 Q\u2081)', `$${result.revenue.toFixed(2)}`]);
-  rows.push(['Consumer Tax Burden (P\u2081 \u2212 P\u2080) \u00d7 Q\u2081', `$${result.consumerBurdenDollars.toFixed(2)}`]);
-  rows.push(['Producer Tax Burden (P\u2080 \u2212 P\u2082) \u00d7 Q\u2081', `$${result.producerBurdenDollars.toFixed(2)}`]);
+  rows.push(['Original Price (P\u2080)', `$${fmtMoney(result.freeMarket.P)}`]);
+  rows.push(['Original Quantity (Q\u2080)', `${fmtQty(result.freeMarket.Q)} units`]);
+  rows.push(['Tax per unit (t)', `$${fmtMoney(Math.abs(taxRate))}`]);
+  rows.push(['New Consumer Price (P\u2081)', `$${fmtMoney(result.newEquilibrium.Pc)}`]);
+  rows.push(['New Producer Price (P\u2082)', `$${fmtMoney(result.newEquilibrium.Ps)}`]);
+  rows.push(['New Quantity (Q\u2081)', `${fmtQty(result.newEquilibrium.Q)} units`]);
+  rows.push(['Tax Revenue (t \u00d7 Q\u2081)', `$${fmtMoney(result.revenue)}`]);
+  rows.push(['Consumer Tax Burden (P\u2081 \u2212 P\u2080) \u00d7 Q\u2081', `$${fmtMoney(result.consumerBurdenDollars)}`]);
+  rows.push(['Producer Tax Burden (P\u2080 \u2212 P\u2082) \u00d7 Q\u2081', `$${fmtMoney(result.producerBurdenDollars)}`]);
 
   tbody.innerHTML = rows.map(([label, val]) =>
     `<tr><td class="dt-label">${label}</td><td class="dt-value">${val}</td></tr>`
@@ -482,7 +491,7 @@ function renderTeacherSchedules(round, taxRate) {
     const tr = document.createElement('tr');
     if (row.isEquilibrium) tr.classList.add('eq-row');
     if (row.isNewEquilibrium) tr.classList.add('new-eq-row');
-    tr.innerHTML = `<td>${row.p}</td><td>${row.qd}</td><td>${row.qs}</td><td>${row.qsAfter !== undefined ? row.qsAfter : ''}</td>`;
+    tr.innerHTML = `<td>${row.p}</td><td>${row.qd}</td><td>${row.qs}</td><td>${row.qsAfter != null ? row.qsAfter : '\u2014'}</td>`;
     afterBody.appendChild(tr);
   });
 }
