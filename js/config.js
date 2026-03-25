@@ -224,17 +224,30 @@ export const ROUNDS = [
   // ═══════════════════════════════════════════════════════════════
   // Round 4: Life-Saving Medicine Tax — Perfectly Inelastic Demand
   // ═══════════════════════════════════════════════════════════════
-  // Perfectly inelastic demand (Ed = 0): Q fixed at 20 units regardless of price
-  // Supply: Ps = 10 + 1·Q → P₀ = 10 + 20 = $30
+  // Perfectly inelastic demand: Qd = 20 at ALL prices (vertical demand curve, Ed = 0)
+  // Inverse supply: Ps = 10 + 1·Q  →  Direct: Qs = P − 10
   //
-  // Consumer burden = 100% (vertical demand curve → all tax passed to consumers)
-  // PES = P₀ / (d × Q₀) = 30 / (1 × 20) = 1.5 → elastic supply ✓
+  // Equilibrium: Qs = Q₀ = 20  →  P₀ = 10 + 20 = $30
+  // Consumer burden = b/(b+d) = 100% (vertical demand → all tax shifted to consumers)
+  // Producer burden = 0% (producers receive unchanged net price = P₀)
+  // PES = P₀/(d×Q₀) = 30/(1×20) = 1.50 → elastic supply ✓
   //
-  // Model answer t = $5:
-  //   Qt = 20 (unchanged), Pc = 30 + 5 = $35, Ps = $30
+  // Special case rules:
+  //   Qd column = 20 in every table row (same number throughout) ✓
+  //   After-tax: Qt = Q₀ = 20 (unchanged), Pc = P₀ + t, Ps = P₀ (no change)
+  //   Revenue = t × Q₀ = t × 20 (grows linearly with t — no deadweight loss!)
+  //
+  // Integer check (d=1, c=10, price step=$5):
+  //   Qd = 20 (constant — trivially integer) ✓
+  //   Qs = P − 10 → integer for all integer P ✓
+  //
+  // Model answer t = $5 (multiple of $5 ✓):
+  //   Qt = 20 (unchanged), Pc = $35, Ps = $30
   //   Revenue = 5 × 20 = $100  ← target
-  //   Consumer burden = 100%, Producer burden = 0%
-  //   All values are integers ✓
+  //   Consumer price rise = $5 = full tax ✓
+  //   After-tax equilibrium Pc = $35 is on table row ✓
+  //   Qs after-tax column = original Qs shifted down 1 row (5÷5=1) ✓
+  //   No new rows added ✓
   {
     id: 4,
     title: 'The Aha Moment',
@@ -254,16 +267,16 @@ export const ROUNDS = [
     scheduleMin: 20,
     scheduleMax: 45,
     scheduleStep: 5,
-    sliderMin: 1,
-    sliderMax: 10,
-    sliderStep: 1,
-    sliderDefault: 3,
+    sliderMin: 5,
+    sliderMax: 15,
+    sliderStep: 5,
+    sliderDefault: 5,
     revenueTarget: 100,
     revenueTargetLabel: 'HK$100',
     secondaryTarget: null,
     hasBurdenPrediction: true,
     timeLimit: null,
-    sliderZones: { green: [1, 4], amber: [5, 7], red: [8, 10] },
+    sliderZones: { green: [5, 5], amber: [5, 10], red: [5, 15] },
   },
 ];
 
