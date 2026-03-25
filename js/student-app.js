@@ -400,30 +400,27 @@ function onTaxSliderChange() {
 function updateSliderZone(val, round) {
   const slider = $('taxSlider');
   const zoneLabel = $('sliderZoneLabel');
-  if (!round.sliderZones || !zoneLabel) return;
+  if (!zoneLabel) return;
 
-  const zones = round.sliderZones;
+  // Three equal zones based purely on slider range — no model-answer hints.
+  const min = parseFloat(slider.min);
+  const max = parseFloat(slider.max);
+  const third = (max - min) / 3;
+
   let zone, label;
-
-  // Check from narrowest to widest so the green "on-target" zone is not
-  // swallowed by the wider red/amber ranges.
-  if (val >= zones.green[0] && val <= zones.green[1]) {
-    zone = 'green'; label = 'On target';
-  } else if (val >= zones.amber[0] && val <= zones.amber[1]) {
+  if (val <= min + third) {
+    zone = 'green'; label = 'Low';
+  } else if (val <= min + 2 * third) {
     zone = 'amber'; label = 'Moderate';
   } else {
-    zone = 'red'; label = val < zones.amber[0] ? 'Too low' : 'Too high';
+    zone = 'red'; label = 'High';
   }
 
   zoneLabel.textContent = label;
   zoneLabel.className = 'slider-zone-label zone-' + zone;
 
-  // Update slider track gradient
-  const min = parseFloat(slider.min);
-  const max = parseFloat(slider.max);
-  const greenEnd = ((zones.green[1] - min) / (max - min)) * 100;
-  const amberEnd = ((zones.amber[1] - min) / (max - min)) * 100;
-  slider.style.background = `linear-gradient(to right, #16a34a 0%, #16a34a ${greenEnd}%, #f59e0b ${greenEnd}%, #f59e0b ${amberEnd}%, #dc2626 ${amberEnd}%, #dc2626 100%)`;
+  // Update slider track gradient — equal thirds
+  slider.style.background = `linear-gradient(to right, #16a34a 0%, #16a34a 33.33%, #f59e0b 33.33%, #f59e0b 66.67%, #dc2626 66.67%, #dc2626 100%)`;
 }
 
 // Issue 7: check if both dropdowns are selected

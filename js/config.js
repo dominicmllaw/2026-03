@@ -264,11 +264,13 @@ export const ROUNDS = [
     c: 10,
     d: 1,
     // Equilibrium: Q₀ = 20, P₀ = $30
+    // scheduleMax extended to 60 so Pc = P₀ + sliderMax = 30 + 30 = $60 stays on the table.
+    // sliderMax extended to 30 → 6 slider values: 5,10,15,20,25,30.
     scheduleMin: 20,
-    scheduleMax: 45,
+    scheduleMax: 60,
     scheduleStep: 5,
     sliderMin: 5,
-    sliderMax: 15,
+    sliderMax: 30,
     sliderStep: 5,
     sliderDefault: 5,
     revenueTarget: 100,
@@ -276,7 +278,7 @@ export const ROUNDS = [
     secondaryTarget: null,
     hasBurdenPrediction: true,
     timeLimit: null,
-    sliderZones: { green: [5, 5], amber: [5, 10], red: [5, 15] },
+    sliderZones: { green: [5, 5], amber: [5, 15], red: [20, 30] },
   },
 ];
 
