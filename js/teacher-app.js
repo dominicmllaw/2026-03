@@ -1,6 +1,6 @@
 // Tax Adviser Arena — Teacher Dashboard Controller
 
-import { ROUNDS, TOTAL_GROUPS, TOTAL_ROUNDS, PHASE, COLOURS } from './config.js';
+import { ROUNDS, TOTAL_GROUPS, TOTAL_ROUNDS, PHASE, COLOURS, STUDENT_NAMES } from './config.js';
 import { initDB, set, get, getChildren, onValue, resetGame } from './db.js';
 import { simulate, computeOptimalRate, generateSchedule } from './simulation.js';
 import { scoreSubmission, calculateLeaderboard } from './scoring.js';
@@ -17,6 +17,7 @@ let manualScores = {};
 let pollTimer = null;
 let revealResults = {}; // { groupNum: { submission, simResult, score } }
 let tutorialSlide = 0; // Issue 15: current tutorial slide (0-3)
+let groupRoster = {};  // { groupNum: ['NAME1', 'NAME2'] }
 
 const $ = (id) => document.getElementById(id);
 
@@ -73,6 +74,47 @@ async function init() {
   }
 
   startPolling();
+
+  // Live-update roster whenever a group joins
+  onValue('roster', (data) => {
+    if (!data) return;
+    for (const [gNum, entry] of Object.entries(data)) {
+      if (entry?.members) groupRoster[gNum] = entry.members;
+    }
+    renderRosterCard();
+  });
+}
+
+// ── Roster helpers ──
+
+/** Returns 'G3 · CHAN / LAW' for a group number */
+function groupLabel(gNum) {
+  const members = groupRoster[gNum];
+  if (!members || members.length === 0) return `G${gNum}`;
+  return `G${gNum} · ${members.map(n => n.split(' ')[0]).join(' / ')}`;
+}
+
+/** Full names tooltip e.g. 'CHAN TSANG MING · LAW HEI LAM' */
+function groupTitle(gNum) {
+  const members = groupRoster[gNum];
+  return members ? members.join(' · ') : `Group ${gNum}`;
+}
+
+function renderRosterCard() {
+  const container = $('rosterRows');
+  if (!container) return;
+  const joined = Object.entries(groupRoster)
+    .sort(([a], [b]) => parseInt(a) - parseInt(b));
+  if (joined.length === 0) {
+    container.innerHTML = '<p class="scoring-hint">No groups have joined yet.</p>';
+    return;
+  }
+  container.innerHTML = joined.map(([gNum, members]) => `
+    <div class="roster-row">
+      <span class="roster-group">G${gNum}</span>
+      <span class="roster-names">${members.map(escapeHtml).join(' · ')}</span>
+    </div>
+  `).join('');
 }
 
 function bindEvents() {
@@ -110,10 +152,12 @@ function bindEvents() {
       allScores = {};
       manualScores = {};
       revealResults = {};
+      groupRoster = {};
       tutorialSlide = 0;
       $('btnSkipTutorial').disabled = false;
       $('btnSkipTutorial').textContent = 'Skip All';
       updateTutorialUI();
+      renderRosterCard();
       updateUI();
     }
   });
@@ -220,7 +264,7 @@ function updateJustificationMonitor(round, submissions) {
       const row = document.createElement('div');
       row.className = 'just-monitor-row flagged';
       row.innerHTML = `
-        <span class="just-monitor-group">G${gNum}</span>
+        <span class="just-monitor-group" title="${escapeHtml(groupTitle(gNum))}">${groupLabel(gNum)}</span>
         <span class="just-monitor-flag">${flags.map(f => `<span class="flag-item">\u26a0\ufe0f ${escapeHtml(f)}</span>`).join('')}</span>
       `;
       container.appendChild(row);
@@ -431,7 +475,7 @@ function showGroupResult(round, groupNum) {
   });
 
   // Data table
-  $('dataTableTitle').textContent = `Group ${groupNum} — Tax: $${Math.abs(taxRate).toFixed(2)}`;
+  $('dataTableTitle').textContent = `${groupTitle(groupNum)} — Tax: $${Math.abs(taxRate).toFixed(2)}`;
   renderDataTable(round, simResult, taxRate);
 
   // Schedule tables
@@ -506,7 +550,9 @@ function setupGroupSelector(results) {
   groups.forEach(g => {
     const opt = document.createElement('option');
     opt.value = g;
-    opt.textContent = `Group ${g}`;
+    opt.textContent = groupRoster[g]
+      ? `G${g} · ${groupRoster[g].map(n => n.split(' ')[0]).join(' / ')}`
+      : `Group ${g}`;
     sel.appendChild(opt);
   });
 
@@ -542,7 +588,7 @@ function setupScoringUI(round, results) {
     const existing = manualScores[gNum]?.[currentRound];
 
     row.innerHTML = `
-      <div class="scoring-group-label">G${gNum}</div>
+      <div class="scoring-group-label" title="${escapeHtml(groupTitle(gNum))}">${groupLabel(gNum)}</div>
       <div class="scoring-justification" title="Click to expand">
         <span class="scoring-just-summary">${escapeHtml(submission.justification?.substring(0, 60) || '—')}</span>
         <div class="scoring-just-full" hidden>${escapeHtml(submission.justification || '—')}</div>
@@ -676,7 +722,7 @@ function updateSubmissionTable(submissions) {
   for (const [gNum, sub] of sorted) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>G${gNum}</strong></td>
+      <td title="${escapeHtml(groupTitle(gNum))}"><strong>${groupLabel(gNum)}</strong></td>
       <td>$${Math.abs(sub.taxRate).toFixed(2)}</td>
       <td class="justification-cell">${escapeHtml(sub.justification?.substring(0, 80) || '—')}</td>
     `;

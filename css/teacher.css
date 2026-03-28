@@ -664,3 +664,25 @@
     flex-direction: column;
   }
 }
+
+/* ── Class Roster Card ── */
+.roster-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.roster-row:last-child { border-bottom: none; }
+.roster-group {
+  font-weight: 700;
+  min-width: 32px;
+  color: var(--primary);
+}
+.roster-names {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -14,7 +14,7 @@
 <body>
   <header class="app-header">
     <h1 class="app-title">Tax Adviser Arena</h1>
-    <div class="group-badge" id="groupBadge" hidden>Group <span id="groupNum"></span></div>
+    <div class="group-badge" id="groupBadge" hidden>Group <span id="groupNum"></span><span id="groupMemberNames" class="group-member-names"></span></div>
   </header>
 
   <main>
@@ -22,13 +22,26 @@
     <section id="screenLobby" class="screen active">
       <div class="card lobby-card">
         <h2>Welcome, Tax Advisers!</h2>
-        <p>You are government tax advisers for Hong Kong. Select your group number to begin.</p>
+        <p>You are government tax advisers for Hong Kong. Select your group number and both members' names to begin.</p>
         <div class="form-group">
           <label for="groupSelect">Group Number</label>
           <select id="groupSelect" class="input-large">
             <option value="">Choose your group…</option>
           </select>
         </div>
+        <div class="form-group">
+          <label for="nameSelect1">Student 1</label>
+          <select id="nameSelect1" class="input-large">
+            <option value="">Choose name…</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="nameSelect2">Student 2</label>
+          <select id="nameSelect2" class="input-large">
+            <option value="">Choose name…</option>
+          </select>
+        </div>
+        <p class="hint name-error" id="nameError" hidden>Please select two different names.</p>
         <button id="btnJoin" class="btn btn-primary btn-large" disabled>Join Game</button>
         <p class="hint" id="lobbyStatus">Waiting for the teacher to start the game…</p>
       </div>

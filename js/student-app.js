@@ -1,6 +1,6 @@
 // Tax Adviser Arena — Student App Controller
 
-import { ROUNDS, TOTAL_GROUPS, TOTAL_ROUNDS, PHASE, COLOURS } from './config.js';
+import { ROUNDS, TOTAL_GROUPS, TOTAL_ROUNDS, PHASE, COLOURS, STUDENT_NAMES } from './config.js';
 import { initDB, set, get, onValue } from './db.js';
 import { simulate, computeOptimalRate, generateSchedule } from './simulation.js';
 import { scoreSubmission, calculateLeaderboard } from './scoring.js';
@@ -8,6 +8,7 @@ import { drawSDDiagram, drawBurdenBar, renderLeaderboard } from './charts.js';
 
 // ── State ──
 let groupNumber = null;
+let groupMembers = []; // ['NAME1', 'NAME2'] set on join
 let currentRound = 0;
 let currentPhase = PHASE.LOBBY;
 let timerInterval = null;
@@ -29,18 +30,30 @@ const screens = {
 async function init() {
   await initDB();
   populateGroupDropdown();
+  populateNameDropdowns();
   bindEvents();
 
-  // Issue 18: Restore group from sessionStorage on refresh
+  // Issue 18: Restore group and names from sessionStorage on refresh
   const saved = sessionStorage.getItem('taa_group');
   if (saved) {
     groupNumber = parseInt(saved);
     $('groupSelect').value = groupNumber;
-    $('btnJoin').disabled = false;
+
+    const savedMembers = sessionStorage.getItem('taa_members');
+    if (savedMembers) {
+      try {
+        groupMembers = JSON.parse(savedMembers);
+        $('nameSelect1').value = groupMembers[0] || '';
+        $('nameSelect2').value = groupMembers[1] || '';
+      } catch {}
+    }
 
     // Restore group badge immediately
     $('groupBadge').hidden = false;
     $('groupNum').textContent = groupNumber;
+    if (groupMembers.length) {
+      $('groupMemberNames').textContent = ` · ${groupMembers.map(n => n.split(' ')[0]).join(' / ')}`;
+    }
 
     // Fetch current game state and show correct screen immediately
     const state = await get('game');
@@ -81,10 +94,30 @@ function populateGroupDropdown() {
   }
 }
 
-function bindEvents() {
-  $('groupSelect').addEventListener('change', (e) => {
-    $('btnJoin').disabled = !e.target.value;
+function populateNameDropdowns() {
+  [$('nameSelect1'), $('nameSelect2')].forEach(sel => {
+    STUDENT_NAMES.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
   });
+}
+
+function checkJoinReady() {
+  const g = $('groupSelect').value;
+  const n1 = $('nameSelect1').value;
+  const n2 = $('nameSelect2').value;
+  const dupError = n1 && n2 && n1 === n2;
+  $('nameError').hidden = !dupError;
+  $('btnJoin').disabled = !(g && n1 && n2 && !dupError);
+}
+
+function bindEvents() {
+  $('groupSelect').addEventListener('change', checkJoinReady);
+  $('nameSelect1').addEventListener('change', checkJoinReady);
+  $('nameSelect2').addEventListener('change', checkJoinReady);
 
   $('btnJoin').addEventListener('click', joinGame);
   $('btnEnterWaiting').addEventListener('click', enterWaitingRoom);
@@ -111,13 +144,23 @@ function showScreen(name) {
 }
 
 // ── Join Game ──
-function joinGame() {
+async function joinGame() {
   groupNumber = parseInt($('groupSelect').value);
-  if (!groupNumber) return;
+  const n1 = $('nameSelect1').value;
+  const n2 = $('nameSelect2').value;
+  if (!groupNumber || !n1 || !n2 || n1 === n2) return;
+
+  groupMembers = [n1, n2];
 
   sessionStorage.setItem('taa_group', groupNumber);
+  sessionStorage.setItem('taa_members', JSON.stringify(groupMembers));
+
+  // Persist roster to DB so teacher can see group membership
+  await set(`roster/${groupNumber}`, { members: groupMembers });
+
   $('groupBadge').hidden = false;
   $('groupNum').textContent = groupNumber;
+  $('groupMemberNames').textContent = ` · ${groupMembers.map(n => n.split(' ')[0]).join(' / ')}`;
 
   // Show intro/tutorial screen (Issue 13 + 15: teacher-synced)
   showScreen('intro');

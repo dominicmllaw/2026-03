@@ -4,6 +4,41 @@
 export const TOTAL_GROUPS = 16;
 export const TOTAL_ROUNDS = 4;
 
+// ── Student name list (sorted alphabetically) ──
+export const STUDENT_NAMES = [
+  'CHAN HO YEUNG',
+  'CHAN PAK LAM',
+  'CHAN TING LAI',
+  'CHAN TSANG MING',
+  'CHEN LIANGXUAN',
+  'CHEUNG YING CHI',
+  'CHIU CHUN FAI',
+  'CHUNG YUEN MEI',
+  'FENG CHI KIT',
+  'HARIS',
+  'HUANG DEVON',
+  'HUANG YAU WAI',
+  'IP CHEUK HIN',
+  'KONG HIU YI',
+  'KWONG YUK SUM',
+  'LAM WAI CHING',
+  'LAW HEI LAM',
+  'LAW MAN PAN',
+  'LIN KAI NOK',
+  'MA KA SHUEN',
+  'PAN ZIHAO',
+  'SIU PAK LAM',
+  'TAM CHUN HIN',
+  'WONG HOI MAN',
+  'WU CHEUK YAN',
+  'XIAO HOI LAM',
+  'XU JIAXIN',
+  'YAU LAP MAN',
+  'YE YI',
+  'YU RAN',
+  'YUNG YU LAM',
+];
+
 // Firebase configuration — replace with your project's config before deployment
 export const FIREBASE_CONFIG = {
   // To use Firebase: create a project at console.firebase.google.com,
