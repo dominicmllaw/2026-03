@@ -196,7 +196,8 @@
         </div>
 
         <!-- Target -->
-        <div class="target-box" id="targetBox">
+        <div class="target-box target-box-prominent" id="targetBox">
+          <p class="target-label">TARGET</p>
           <p id="targetText"></p>
           <p id="secondaryTargetText" hidden></p>
         </div>
@@ -239,6 +240,26 @@
         <!-- Structured Justification (Issue 7) -->
         <div class="justification-structured" id="justificationSection">
           <label class="justification-label">Justify your choice <span class="required">(required — select both dropdowns)</span></label>
+          <!-- Demand / Supply elasticity classification -->
+          <div class="justification-row">
+            <span>Demand is </span>
+            <select id="justDropdownC" class="just-dropdown">
+              <option value="">— select —</option>
+              <option value="elastic">elastic</option>
+              <option value="inelastic">inelastic</option>
+              <option value="perfectly_inelastic">perfectly inelastic</option>
+            </select>
+            <span>.</span>
+          </div>
+          <div class="justification-row">
+            <span>Supply is </span>
+            <select id="justDropdownD" class="just-dropdown">
+              <option value="">— select —</option>
+              <option value="elastic">elastic</option>
+              <option value="inelastic">inelastic</option>
+            </select>
+            <span>.</span>
+          </div>
           <div class="justification-row">
             <span>We set a </span>
             <select id="justDropdownA" class="just-dropdown">
@@ -293,10 +314,10 @@
 
         <!-- Model answer comparison (Issue 1) -->
         <div class="model-answer-banner" id="modelAnswerBanner">
-          <span class="model-label">Optimal rate was</span>
-          <span class="model-value" id="modelOptimalRate">—</span>
-          <span class="model-separator">—</span>
-          <span class="model-label">Your rate was</span>
+          <span class="model-label">Optimal tax rate:</span>
+          <span class="model-value model-value-highlight" id="modelOptimalRate">—</span>
+          <span class="model-separator"> · </span>
+          <span class="model-label">Your rate:</span>
           <span class="model-value yours" id="yourRate">—</span>
         </div>
 
@@ -318,7 +339,7 @@
 
         <!-- Results summary -->
         <div class="results-grid" id="resultsGrid">
-          <div class="result-item">
+          <div class="result-item highlight" id="resultTaxRateItem">
             <div class="result-label" id="resultTaxRateLabel">Your Tax Rate</div>
             <div class="result-value" id="resultTaxRate">—</div>
           </div>
@@ -381,7 +402,10 @@
     <!-- ── Final Leaderboard ── -->
     <section id="screenFinal" class="screen">
       <div class="card">
-        <h2>Final Results</h2>
+        <div class="game-over-banner" id="gameOverBanner">
+          <h2>Game Over!</h2>
+          <p id="gameOverMessage">The Tax Adviser Arena has ended. Here are the final results.</p>
+        </div>
         <canvas id="finalLeaderboard" height="400"></canvas>
         <div class="final-score" id="finalScore"></div>
       </div>

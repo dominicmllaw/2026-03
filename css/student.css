@@ -166,6 +166,21 @@
   margin-bottom: 4px;
 }
 
+.target-box-prominent {
+  border: 2px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.target-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f59e0b;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
 /* ── Slider Zones (Issue 16) ── */
 
 .slider-zone-label {
@@ -324,6 +339,12 @@
 
 .model-separator {
   color: var(--text-muted);
+}
+
+.model-value-highlight {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #f59e0b;
 }
 
 .diagram-reveal {
@@ -650,6 +671,18 @@
     height: 300px;
   }
 }
+
+/* ── Game Over Banner ── */
+.game-over-banner {
+  text-align: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: #fff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.game-over-banner h2 { color: #f59e0b; margin: 0 0 4px; }
+.game-over-banner p { margin: 0; opacity: 0.85; }
 
 /* ── Member names in group badge ── */
 .group-member-names {

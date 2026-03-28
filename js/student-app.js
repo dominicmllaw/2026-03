@@ -128,6 +128,8 @@ function bindEvents() {
   // Structured justification dropdowns (Issue 7)
   $('justDropdownA').addEventListener('change', checkJustificationComplete);
   $('justDropdownB').addEventListener('change', checkJustificationComplete);
+  $('justDropdownC').addEventListener('change', checkJustificationComplete);
+  $('justDropdownD').addEventListener('change', checkJustificationComplete);
 
   const burdenSlider = $('burdenSlider');
   if (burdenSlider) {
@@ -414,10 +416,12 @@ function setupSubmitScreen(round) {
   // Structured justification (Issue 7)
   $('justDropdownA').value = '';
   $('justDropdownB').value = '';
+  $('justDropdownC').value = '';
+  $('justDropdownD').value = '';
   $('justElaboration').value = '';
   $('justTaxWord').textContent = ' tax';
   $('btnSubmit').disabled = true;
-  $('submitHint').textContent = 'Select both dropdowns above to unlock the submit button.';
+  $('submitHint').textContent = 'Select all dropdowns above to unlock the submit button.';
 
   // Timer
   if (round.timeLimit) {
@@ -466,13 +470,15 @@ function updateSliderZone(val, round) {
   slider.style.background = `linear-gradient(to right, #16a34a 0%, #16a34a 33.33%, #f59e0b 33.33%, #f59e0b 66.67%, #dc2626 66.67%, #dc2626 100%)`;
 }
 
-// Issue 7: check if both dropdowns are selected
+// Issue 7: check if all dropdowns are selected
 function checkJustificationComplete() {
   const a = $('justDropdownA').value;
   const b = $('justDropdownB').value;
-  const ready = a !== '' && b !== '';
+  const c = $('justDropdownC').value;
+  const d = $('justDropdownD').value;
+  const ready = a !== '' && b !== '' && c !== '' && d !== '';
   $('btnSubmit').disabled = !ready;
-  $('submitHint').textContent = ready ? 'Ready to submit!' : 'Select both dropdowns above to unlock the submit button.';
+  $('submitHint').textContent = ready ? 'Ready to submit!' : 'Select all dropdowns above to unlock the submit button.';
 }
 
 function startTimer(seconds) {
@@ -486,7 +492,7 @@ function startTimer(seconds) {
     updateTimerDisplay(remaining, seconds);
     if (remaining <= 0) {
       clearInterval(timerInterval);
-      if ($('justDropdownA').value && $('justDropdownB').value) {
+      if ($('justDropdownA').value && $('justDropdownB').value && $('justDropdownC').value && $('justDropdownD').value) {
         submitAnswer();
       }
     }
@@ -514,6 +520,8 @@ async function submitAnswer() {
   const justLevel = $('justDropdownA').value;
   const justReason = $('justDropdownB').value;
   const justText = $('justElaboration').value.trim();
+  const demandElasticity = $('justDropdownC').value;
+  const supplyElasticity = $('justDropdownD').value;
 
   const submission = {
     group: groupNumber,
@@ -523,6 +531,8 @@ async function submitAnswer() {
     justReason,
     justText,
     justification: `We set a ${justLevel} tax because ${justReasonLabel(justReason)}.${justText ? ' ' + justText : ''}`,
+    demandElasticity,
+    supplyElasticity,
     timestamp: new Date().toISOString(),
   };
 
@@ -688,6 +698,8 @@ async function showFinalResults() {
       <h3>Your Group: #${myRank} of ${leaderboard.length}</h3>
       <p class="final-total">Total: ${myEntry.total} points</p>
     `;
+  } else {
+    $('finalScore').innerHTML = '<p class="scoring-hint">Your group did not appear in the final leaderboard.</p>';
   }
 }
 

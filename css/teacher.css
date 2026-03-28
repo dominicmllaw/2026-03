@@ -686,3 +686,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ── Teacher practice diagram on tutorial slide 4 ── */
+.teacher-practice-diagram {
+  margin-top: 12px;
+}
+.teacher-practice-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+.teacher-practice-slider .slider { flex: 1; }
+.teacher-practice-slider .slider { flex: 1; }

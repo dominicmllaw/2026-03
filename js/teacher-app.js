@@ -9,6 +9,8 @@ import {
   renderBurdenComparison, drawBurdenBar,
 } from './charts.js';
 
+const TEACHER_PRACTICE_CONFIG = { a: 100, b: 1, c: 0, d: 1, scheduleMin: 10, scheduleMax: 90, scheduleStep: 10 };
+
 // ── State ──
 let currentRound = 0;
 let currentPhase = PHASE.LOBBY;
@@ -167,6 +169,15 @@ function bindEvents() {
 
   // Group viewer selector (Issue 5)
   $('groupViewSelect').addEventListener('change', onGroupViewChange);
+
+  const tpSlider = $('teacherPracticeSlider');
+  if (tpSlider) {
+    tpSlider.addEventListener('input', () => {
+      const rate = parseFloat(tpSlider.value);
+      $('teacherPracticeValue').textContent = `$${rate}`;
+      drawSDDiagram($('teacherPracticeSD'), TEACHER_PRACTICE_CONFIG, rate, { showShift: rate > 0, showRevenue: rate > 0 });
+    });
+  }
 }
 
 function bindTabs() {
@@ -178,6 +189,21 @@ function bindTabs() {
       const target = tab.dataset.tab;
       const content = document.getElementById('tab' + target.charAt(0).toUpperCase() + target.slice(1));
       if (content) content.classList.add('active');
+      // Re-render S/D diagram when switching to diagram tab — canvas was 0×0 while hidden
+      if (target === 'diagram') {
+        const round = (currentRound >= 1 && currentRound <= TOTAL_ROUNDS) ? ROUNDS[currentRound] : null;
+        if (round && currentPhase === PHASE.REVEAL) {
+          const sel = $('groupViewSelect');
+          const val = sel ? sel.value : 'model';
+          if (val && val !== 'model') {
+            showGroupResult(round, parseInt(val));
+          } else {
+            showModelAnswer(round);
+          }
+        } else if (round) {
+          drawSDDiagram($('teacherSD'), round, 0, {});
+        }
+      }
     });
   });
 }
@@ -196,9 +222,18 @@ function updateTutorialUI() {
   sections.forEach((sec, i) => {
     sec.style.display = i <= tutorialSlide ? '' : 'none';
   });
-  // Scroll to current slide
-  if (sections[tutorialSlide]) {
-    sections[tutorialSlide].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Scroll the control panel sidebar back to top so Next/Prev buttons stay visible
+  const controlPanel = document.querySelector('.control-panel');
+  if (controlPanel) controlPanel.scrollTop = 0;
+
+  // Draw practice S/D diagram on slide 4 (index 3)
+  if (tutorialSlide === 3) {
+    const canvas = $('teacherPracticeSD');
+    if (canvas) {
+      const sliderEl = $('teacherPracticeSlider');
+      const rate = sliderEl ? parseFloat(sliderEl.value) : 0;
+      drawSDDiagram(canvas, TEACHER_PRACTICE_CONFIG, rate, { showShift: rate > 0, showRevenue: rate > 0 });
+    }
   }
 }
 
@@ -590,7 +625,7 @@ function setupScoringUI(round, results) {
     row.innerHTML = `
       <div class="scoring-group-label" title="${escapeHtml(groupTitle(gNum))}">${groupLabel(gNum)}</div>
       <div class="scoring-justification" title="Click to expand">
-        <span class="scoring-just-summary">${escapeHtml(submission.justification?.substring(0, 60) || '—')}</span>
+        <span class="scoring-just-summary">${escapeHtml(submission.justification?.substring(0, 60) || '—')}${submission.demandElasticity ? `<br><small>D: ${submission.demandElasticity} · S: ${submission.supplyElasticity}</small>` : ''}</span>
         <div class="scoring-just-full" hidden>${escapeHtml(submission.justification || '—')}</div>
       </div>
       <div class="scoring-buttons">
@@ -724,7 +759,7 @@ function updateSubmissionTable(submissions) {
     tr.innerHTML = `
       <td title="${escapeHtml(groupTitle(gNum))}"><strong>${groupLabel(gNum)}</strong></td>
       <td>$${Math.abs(sub.taxRate).toFixed(2)}</td>
-      <td class="justification-cell">${escapeHtml(sub.justification?.substring(0, 80) || '—')}</td>
+      <td class="justification-cell">${escapeHtml(sub.justification?.substring(0, 60) || '—')}${sub.demandElasticity ? ` [D:${sub.demandElasticity} S:${sub.supplyElasticity}]` : ''}</td>
     `;
     tbody.appendChild(tr);
   }
