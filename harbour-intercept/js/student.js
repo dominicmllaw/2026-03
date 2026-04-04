@@ -171,6 +171,26 @@ function buildS1Gate(num) {
   badge.textContent = `PHASE ${num}`;
   badge.className   = `phase-badge phase-badge-${num}`;
 
+  // Clean up any Phase 3 qty-form injected by a previous run
+  const oldForm = document.getElementById('phase3-qty-form');
+  if (oldForm) oldForm.remove();
+
+  if (phase.phaseType === 'demand-only') {
+    buildDemandOnlyGate(num, phase);
+  } else {
+    buildSupplyShiftGate(num, phase);
+  }
+
+  showScreen('screen-s1gate');
+}
+
+// Phase 1 & 2: fill in New Qty Supplied column
+function buildSupplyShiftGate(num, phase) {
+  document.querySelector('#s1-table thead').innerHTML = `
+    <tr>
+      <th>Price ($)</th><th>Qd</th><th>Original Qs</th><th>New Qty Supplied</th>
+    </tr>`;
+
   const taxLabel = phase.taxLabel || `$${phase.tax} per unit tax on producers`;
   document.getElementById('s1-instruction').textContent =
     `The government imposes a ${taxLabel}. ` +
@@ -181,7 +201,6 @@ function buildS1Gate(num) {
   const tbody = document.querySelector('#s1-table tbody');
   tbody.innerHTML = '';
 
-  // Shared dropdown options: '/' then all unique Qs values in ascending order
   const qsValues = [...new Set(phase.schedule.map(r => r.qs))].sort((a, b) => a - b);
   const optHtml  = ['/', ...qsValues]
     .map(v => `<option value="${v}">${v}</option>`)
@@ -216,21 +235,85 @@ function buildS1Gate(num) {
     sel.addEventListener('change', onS1Change)
   );
 
-  // Replace unlock button to clear previous event listener
   const oldBtn   = document.getElementById('btn-s1-unlock');
   const freshBtn = oldBtn.cloneNode(true);
-  freshBtn.disabled = true;
+  freshBtn.disabled    = true;
+  freshBtn.textContent = 'UNLOCK →';
   oldBtn.parentNode.replaceChild(freshBtn, oldBtn);
   freshBtn.addEventListener('click', onS1Unlock, { once: true });
+}
 
-  showScreen('screen-s1gate');
+// Phase 3: demand-only — students identify old and new equilibrium quantities
+function buildDemandOnlyGate(num, phase) {
+  document.querySelector('#s1-table thead').innerHTML =
+    '<tr><th>Price ($)</th><th>Qd</th></tr>';
+
+  document.getElementById('s1-instruction').textContent =
+    `A ${phase.taxLabel} is imposed. ` +
+    `The old equilibrium price is $${phase.oldEqPrice} and the new equilibrium price is $${phase.newEqPrice}. ` +
+    `Using the demand schedule below, find the old and new equilibrium quantities.`;
+
+  const tbody = document.querySelector('#s1-table tbody');
+  tbody.innerHTML = '';
+  phase.schedule.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>$${row.price}</td><td>${row.qd}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const oldBtn   = document.getElementById('btn-s1-unlock');
+  const freshBtn = oldBtn.cloneNode(true);
+  freshBtn.disabled    = true;
+  freshBtn.textContent = 'PROCEED →';
+  oldBtn.parentNode.replaceChild(freshBtn, oldBtn);
+
+  const optHtml = phase.eqQtyOptions.map(v => `<option value="${v}">${v}</option>`).join('');
+  const qForm   = document.createElement('div');
+  qForm.id      = 'phase3-qty-form';
+  qForm.innerHTML = `
+    <div class="form-group">
+      <label>Old equilibrium quantity (at P = $${phase.oldEqPrice})</label>
+      <select id="sel-old-qty">
+        <option value="">— Select —</option>
+        ${optHtml}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>New equilibrium quantity (at P = $${phase.newEqPrice})</label>
+      <select id="sel-new-qty">
+        <option value="">— Select —</option>
+        ${optHtml}
+      </select>
+    </div>
+  `;
+  freshBtn.parentNode.insertBefore(qForm, freshBtn);
+
+  function checkDemandGate() {
+    const oldSel = document.getElementById('sel-old-qty');
+    const newSel = document.getElementById('sel-new-qty');
+    const oldOk  = parseInt(oldSel.value) === phase.oldEqQty;
+    const newOk  = parseInt(newSel.value) === phase.newEqQty;
+    oldSel.classList.toggle('field-wrong', oldSel.value !== '' && !oldOk);
+    newSel.classList.toggle('field-wrong', newSel.value !== '' && !newOk);
+    freshBtn.disabled = !(oldOk && newOk);
+  }
+
+  document.getElementById('sel-old-qty').addEventListener('change', checkDemandGate);
+  document.getElementById('sel-new-qty').addEventListener('change', checkDemandGate);
+
+  freshBtn.addEventListener('click', async () => {
+    solveState.eqPrice = phase.newEqPrice;
+    solveState.eqQty   = phase.newEqQty;
+    await set(ref(db, `pairs/${pairId}/phase${num}/s1Complete`), true);
+    buildSolveScreen(num);
+  }, { once: true });
 }
 
 function onS1Change(e) {
   const sel     = e.target;
   const rowIdx  = parseInt(sel.dataset.row);
-  const correct = sel.dataset.correct;   // string: '/' or e.g. '400'
-  const chosen  = sel.value;             // string
+  const correct = sel.dataset.correct;
+  const chosen  = sel.value;
 
   if (!chosen) return;
 
@@ -264,6 +347,20 @@ async function onS1Unlock() {
 // ── Schedule table helper (reused on solve screen) ────────────────────────
 function buildScheduleTableHTML(num) {
   const phase = PHASES[num];
+
+  if (phase.phaseType === 'demand-only') {
+    let html = `<table class="schedule-table">
+      <thead><tr><th>Price ($)</th><th>Qd</th></tr></thead><tbody>`;
+    phase.schedule.forEach(row => {
+      const isOld = row.price === phase.oldEqPrice;
+      const isNew = row.price === phase.newEqPrice;
+      html += `<tr${(isOld || isNew) ? ' class="eq-row"' : ''}>
+        <td>$${row.price}</td><td>${row.qd}</td>
+      </tr>`;
+    });
+    return html + '</tbody></table>';
+  }
+
   let html = `
     <table class="schedule-table">
       <thead><tr>
@@ -295,24 +392,12 @@ function buildSolveScreen(num) {
   badge.textContent = `PHASE ${num}`;
   badge.className   = `phase-badge phase-badge-${num}`;
 
-  document.getElementById('solve-form-container').innerHTML = `
+  const tableBlock = `
     <div class="table-scroll" style="margin-bottom:20px">
       ${buildScheduleTableHTML(num)}
-    </div>
-    <div class="form-group">
-      <label for="sel-eq-price">New equilibrium price ($)</label>
-      <select id="sel-eq-price">
-        <option value="">— Select —</option>
-        ${phase.eqPriceOptions.map(v => `<option value="${v}">$${v}</option>`).join('')}
-      </select>
-    </div>
-    <div class="form-group">
-      <label for="sel-eq-qty">New equilibrium quantity</label>
-      <select id="sel-eq-qty">
-        <option value="">— Select —</option>
-        ${phase.eqQtyOptions.map(v => `<option value="${v}">${v}</option>`).join('')}
-      </select>
-    </div>
+    </div>`;
+
+  const cbBlock = `
     <div class="form-group">
       <label for="input-cb">Consumer burden per unit ($)</label>
       <p class="hint-text">Consumer burden = New price − $${phase.oldEqPrice} (old equilibrium price)</p>
@@ -320,11 +405,41 @@ function buildSolveScreen(num) {
              placeholder="Enter a whole number">
     </div>
     <div id="burden-confirm" class="burden-confirm hidden"></div>
-    <button id="btn-solve-submit" class="btn btn-primary" disabled>CONFIRM →</button>
-  `;
+    <button id="btn-solve-submit" class="btn btn-primary" disabled>CONFIRM →</button>`;
 
-  document.getElementById('sel-eq-price').addEventListener('change', validateSolve);
-  document.getElementById('sel-eq-qty').addEventListener('change', validateSolve);
+  if (phase.phaseType === 'demand-only') {
+    // Eq P and Q already known from gate — just confirm CB
+    document.getElementById('solve-form-container').innerHTML =
+      tableBlock +
+      `<div class="info-box">
+        Old equilibrium: P = $${phase.oldEqPrice}, Q = ${phase.oldEqQty}<br>
+        New equilibrium: P = $${phase.newEqPrice}, Q = ${phase.newEqQty}<br>
+        Tax: $${phase.tax}
+      </div>` +
+      cbBlock;
+  } else {
+    document.getElementById('solve-form-container').innerHTML =
+      tableBlock +
+      `<div class="form-group">
+        <label for="sel-eq-price">New equilibrium price ($)</label>
+        <select id="sel-eq-price">
+          <option value="">— Select —</option>
+          ${phase.eqPriceOptions.map(v => `<option value="${v}">$${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sel-eq-qty">New equilibrium quantity</label>
+        <select id="sel-eq-qty">
+          <option value="">— Select —</option>
+          ${phase.eqQtyOptions.map(v => `<option value="${v}">${v}</option>`).join('')}
+        </select>
+      </div>` +
+      cbBlock;
+
+    document.getElementById('sel-eq-price').addEventListener('change', validateSolve);
+    document.getElementById('sel-eq-qty').addEventListener('change', validateSolve);
+  }
+
   document.getElementById('input-cb').addEventListener('input', validateSolve);
   document.getElementById('btn-solve-submit').addEventListener('click', onSolveConfirm, { once: true });
 
@@ -332,22 +447,24 @@ function buildSolveScreen(num) {
 }
 
 function validateSolve() {
-  const phase     = PHASES[currentPhaseNum];
-  const eqPriceEl = document.getElementById('sel-eq-price');
-  const eqQtyEl   = document.getElementById('sel-eq-qty');
-  const eqPrice   = parseInt(eqPriceEl.value);
-  const eqQty     = parseInt(eqQtyEl.value);
-  const cbRaw     = document.getElementById('input-cb').value.trim();
-  const cbVal     = parseInt(cbRaw);
-  const confirm   = document.getElementById('burden-confirm');
-  const btn       = document.getElementById('btn-solve-submit');
+  const phase   = PHASES[currentPhaseNum];
+  const cbRaw   = document.getElementById('input-cb').value.trim();
+  const cbVal   = parseInt(cbRaw);
+  const confirm = document.getElementById('burden-confirm');
+  const btn     = document.getElementById('btn-solve-submit');
 
-  const priceOk = !isNaN(eqPrice) && eqPrice === phase.newEqPrice;
-  const qtyOk   = !isNaN(eqQty)   && eqQty   === phase.newEqQty;
+  let priceOk = true, qtyOk = true;
 
-  // Red border on wrong eq P / Q after student has made a selection
-  eqPriceEl.classList.toggle('field-wrong', eqPriceEl.value !== '' && !priceOk);
-  eqQtyEl.classList.toggle('field-wrong',   eqQtyEl.value   !== '' && !qtyOk);
+  if (phase.phaseType !== 'demand-only') {
+    const eqPriceEl = document.getElementById('sel-eq-price');
+    const eqQtyEl   = document.getElementById('sel-eq-qty');
+    const eqPrice   = parseInt(eqPriceEl.value);
+    const eqQty     = parseInt(eqQtyEl.value);
+    priceOk = !isNaN(eqPrice) && eqPrice === phase.newEqPrice;
+    qtyOk   = !isNaN(eqQty)   && eqQty   === phase.newEqQty;
+    eqPriceEl.classList.toggle('field-wrong', eqPriceEl.value !== '' && !priceOk);
+    eqQtyEl.classList.toggle('field-wrong',   eqQtyEl.value   !== '' && !qtyOk);
+  }
 
   if (cbRaw === '' || isNaN(cbVal) || cbVal < 0 || cbVal > phase.tax) {
     confirm.className = 'burden-confirm hidden';
@@ -372,8 +489,11 @@ function validateSolve() {
 }
 
 function onSolveConfirm() {
-  solveState.eqPrice = parseInt(document.getElementById('sel-eq-price').value);
-  solveState.eqQty   = parseInt(document.getElementById('sel-eq-qty').value);
+  if (PHASES[currentPhaseNum].phaseType !== 'demand-only') {
+    solveState.eqPrice = parseInt(document.getElementById('sel-eq-price').value);
+    solveState.eqQty   = parseInt(document.getElementById('sel-eq-qty').value);
+  }
+  // demand-only: eqPrice/eqQty already set in buildDemandOnlyGate
   buildTargetScreen(currentPhaseNum);
 }
 

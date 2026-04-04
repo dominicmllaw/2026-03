@@ -253,6 +253,17 @@ select option { background: #1e293b; }
 .field-wrong { border-color: var(--danger) !important; }
 
 /* ── Solve screen ────────────────────────────────────────────────────────── */
+.info-box {
+  background: var(--input-bg);
+  border-left: 3px solid #7c3aed;
+  border-radius: 4px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
 .hint-text {
   font-size: 0.78rem;
   color: var(--text-muted);

@@ -4,9 +4,12 @@
 //   Demand given in question. Supply derived from equilibria: Qs = 200P − 1600.
 //   Old eq P=$11, Q=600. After $3 tariff: new eq P_c=$13, Q=400. CB=$2, PB=$1.
 //
-// Phase 2 source: HKDSE 2003 Paper 1 Q11 (2003-11) — Good X, $3/unit tax
-//   Supply derived from equilibria: Qs = 10P + 20. Old eq P=$12, Q=140.
-//   After $3 tax: new eq P_c=$13, Q=120. CB=$1, PB=$2.
+// Phase 2 source: DSE exam — Good Y, $3/unit tax. Both Qd and Qs given.
+//   Prices in descending order (6→2). Old eq P=$3, Q=30.
+//   After $3 tax: new eq P_c=$5, Q=20. CB=$2, PB=$1.
+//
+// Phase 3 source: DSE exam — Good Z, $3/unit tax. Demand schedule only.
+//   Old eq P=$12 (given), Q=140. New eq P=$13 (given), Q=120. CB=$1, PB=$2.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const STUDENTS = [
@@ -68,18 +71,41 @@ export const PHASES = {
     eqQtyOptions:   [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200],
   },
   2: {
-    label:    'Round B — Elastic Demand',
-    // 2003 DSE Q11: $3/unit tax on Good X. Supply derived from equilibria (Qs = 10P + 20).
-    // Old eq P=$12, Q=140. After $3 tax: new eq P_c=$13, Q=120. CB=$1, PB=$2.
-    // Same tax ($3) and price range (P=10–14) as Phase 1 — only elasticity differs.
-    taxLabel: '$3 per unit tax on producers',
+    label:    'Round B — Good Y',
+    // DSE exam: $3/unit tax on Good Y. Both schedules given. Prices descending.
+    // Old eq P=$3, Q=30. After $3 tax: new eq P_c=$5, Q=20. CB=$2, PB=$1.
+    taxLabel: '$3 per unit tax on Good Y',
     tax: 3,
     schedule: [
-      { price: 10, qd: 180, qs: 120 },
-      { price: 11, qd: 160, qs: 130 },
-      { price: 12, qd: 140, qs: 140 },  // ← old equilibrium
-      { price: 13, qd: 120, qs: 150 },
-      { price: 14, qd: 100, qs: 160 },
+      { price: 6, qd: 10, qs: 60 },
+      { price: 5, qd: 20, qs: 50 },
+      { price: 4, qd: 25, qs: 40 },
+      { price: 3, qd: 30, qs: 30 },  // ← old equilibrium
+      { price: 2, qd: 50, qs: 20 },
+    ],
+    oldEqPrice: 3,
+    oldEqQty:   30,
+    newEqPrice: 5,    // CB = 5 − 3 = 2; PB = 3 − 2 = 1
+    newEqQty:   20,
+    consumerBurden: 2,
+    producerBurden: 1,
+    correctTarget: 'consumer',  // Consumer Shield
+    eqPriceOptions: [2, 3, 4, 5, 6, 7, 8],
+    eqQtyOptions:   [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60],
+  },
+  3: {
+    label:    'Final Intercept — Good Z',
+    // DSE exam: $3/unit tax on Good Z. Demand schedule only (no supply given).
+    // Old eq P=$12 and new eq P=$13 given; students read Q from demand table.
+    // Old eq Q=140, new eq Q=120. CB=$1, PB=$2.
+    taxLabel: '$3 per unit tax on Good Z',
+    tax: 3,
+    phaseType: 'demand-only',   // no supply column — different gate flow
+    schedule: [
+      { price: 11, qd: 160 },
+      { price: 12, qd: 140 },  // ← old equilibrium
+      { price: 13, qd: 120 },  // ← new equilibrium
+      { price: 14, qd: 100 },
     ],
     oldEqPrice: 12,
     oldEqQty:   140,
@@ -88,31 +114,6 @@ export const PHASES = {
     consumerBurden: 1,
     producerBurden: 2,
     correctTarget: 'producer',  // Producer Armour
-    eqPriceOptions: [10, 11, 12, 13, 14, 15, 16, 17],
-    eqQtyOptions:   [100, 110, 120, 130, 140, 150, 160, 170, 180],
-  },
-  3: {
-    label:    'Final Intercept — PED = 0',
-    // Constructed scenario: perfectly inelastic demand (Qd constant at 60).
-    // Students discover that ALL burden falls on consumers when PED = 0.
-    // Old eq P=$14, Q=60. After $3 tax: new eq P_c=$17, Q=60. CB=$3, PB=$0.
-    taxLabel: '$3 per unit tax on producers',
-    tax: 3,
-    schedule: [
-      { price: 13, qd: 60, qs: 50 },
-      { price: 14, qd: 60, qs: 60 },  // ← old equilibrium
-      { price: 15, qd: 60, qs: 70 },
-      { price: 16, qd: 60, qs: 80 },
-      { price: 17, qd: 60, qs: 90 },
-    ],
-    oldEqPrice: 14,
-    oldEqQty:   60,
-    newEqPrice: 17,   // CB = 17 − 14 = 3 = full tax; PB = 0
-    newEqQty:   60,
-    consumerBurden: 3,
-    producerBurden: 0,
-    correctTarget: 'consumer',  // Consumer Shield — ALL burden on consumers
-    eqPriceOptions: [13, 14, 15, 16, 17, 18, 19, 20],
-    eqQtyOptions:   [50, 55, 60, 65, 70, 75, 80, 85, 90],
+    eqQtyOptions:  [100, 110, 120, 130, 140, 150, 160],
   },
 };

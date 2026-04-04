@@ -252,7 +252,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  z-index: 200;
+  z-index: 400;   /* above endgame overlay (z-index: 300) */
 }
 #teacher-panel.hidden { display: none; }
 

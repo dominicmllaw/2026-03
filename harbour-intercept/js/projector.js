@@ -8,9 +8,7 @@ let revealActive        = false;
 let revealAnimationDone = false;
 let pairsData           = {};
 
-// Total HP = 15 pairs × 3 phases × 60% win threshold = 27
-// Each correct answer across any phase deducts 1 HP.
-const BOSS_MAX_HP = Math.round(15 * 3 * 0.6);   // 27
+// HP = ceil(registeredPairs × 3 × 0.6) — updates live as pairs join.
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -95,9 +93,9 @@ function updatePhaseDisplay(phase) {
   const el = document.getElementById('phase-indicator');
   const labels = {
     standby: 'STANDBY — PREPARING TO LAUNCH',
-    phase1:  'PHASE 1 — ROUND A: INELASTIC DEMAND',
-    phase2:  'PHASE 2 — ROUND B: ELASTIC DEMAND',
-    phase3:  'PHASE 3 — FINAL INTERCEPT: PED = 0',
+    phase1:  'PHASE 1 — ROUND A: SOYBEANS',
+    phase2:  'PHASE 2 — ROUND B: GOOD Y',
+    phase3:  'PHASE 3 — FINAL INTERCEPT: GOOD Z',
   };
   el.textContent = labels[phase] || phase.toUpperCase();
   el.className   = `phase-${phase}`;
@@ -130,21 +128,28 @@ function updateSubmissionCounter() {
 }
 
 // ── HP Bar ────────────────────────────────────────────────────────────────
+function getBossMaxHP() {
+  const n = Object.keys(pairsData).length;
+  return n > 0 ? Math.ceil(n * 3 * 0.6) : 0;
+}
+
 function computeHP() {
+  const maxHP = getBossMaxHP();
   let correct = 0;
   Object.values(pairsData).forEach(pair => {
     if (pair.phase1?.targetCorrect === true) correct++;
     if (pair.phase2?.targetCorrect === true) correct++;
     if (pair.phase3?.targetCorrect === true) correct++;
   });
-  return Math.max(0, BOSS_MAX_HP - correct);
+  return Math.max(0, maxHP - correct);
 }
 
 function updateHPBar() {
-  const hp  = computeHP();
-  const pct = BOSS_MAX_HP > 0 ? hp / BOSS_MAX_HP * 100 : 100;
+  const maxHP = getBossMaxHP();
+  const hp    = computeHP();
+  const pct   = maxHP > 0 ? hp / maxHP * 100 : 100;
   document.getElementById('hp-bar-fill').style.width = pct + '%';
-  document.getElementById('hp-value').textContent    = `${hp} / ${BOSS_MAX_HP}`;
+  document.getElementById('hp-value').textContent    = maxHP > 0 ? `${hp} / ${maxHP}` : '— / —';
   document.getElementById('hp-bar-fill').className   =
     pct > 60 ? 'hp-high' : pct > 30 ? 'hp-mid' : 'hp-low';
 }
