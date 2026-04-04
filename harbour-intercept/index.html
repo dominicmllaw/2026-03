@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Harbour Intercept</title>
+  <link rel="stylesheet" href="css/student.css">
+</head>
+<body class="loading">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAIR SELECTION
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-pair-select" class="screen">
+    <div class="card">
+      <h1>HARBOUR<br>INTERCEPT</h1>
+      <h2>Select your pair</h2>
+
+      <div class="form-group">
+        <label for="pair-select">Pair Number</label>
+        <select id="pair-select">
+          <option value="">— Select pair —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="name1-select">Your name</label>
+        <select id="name1-select">
+          <option value="">— Select name —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="name2-select">Partner's name</label>
+        <select id="name2-select">
+          <option value="">— Select name —</option>
+        </select>
+      </div>
+
+      <button id="btn-enter" class="btn btn-primary" disabled>ENTER</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       STANDBY
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-standby" class="screen">
+    <div class="card card-center">
+      <div class="pair-badge" id="standby-pair-badge"></div>
+      <h2>STANDBY</h2>
+      <p class="text-muted">Waiting for teacher to start…</p>
+      <div class="pulse-dot"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       S1 GATE — SUPPLY SHIFT
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-s1gate" class="screen">
+    <div class="card">
+      <div class="screen-header">
+        <span id="s1-phase-badge" class="phase-badge">PHASE</span>
+        <span class="step-label">STEP 1 — SUPPLY SHIFT</span>
+      </div>
+      <p id="s1-instruction" class="instruction"></p>
+      <div class="table-scroll">
+        <table id="s1-table" class="schedule-table">
+          <thead>
+            <tr>
+              <th>Price ($)</th>
+              <th>Qd</th>
+              <th>Original Qs</th>
+              <th>New Supply Price ($)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button id="btn-s1-unlock" class="btn btn-primary" disabled>UNLOCK →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SOLVE — FIND EQUILIBRIUM
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-solve" class="screen">
+    <div class="card">
+      <div class="screen-header">
+        <span id="solve-phase-badge" class="phase-badge">PHASE</span>
+        <span class="step-label">STEP 2 — FIND EQUILIBRIUM</span>
+      </div>
+      <div id="solve-form-container"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       TARGET — CHOOSE YOUR TARGET
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-target" class="screen">
+    <div class="card">
+      <div class="screen-header">
+        <span id="target-phase-badge" class="phase-badge">PHASE</span>
+        <span class="step-label">STEP 3 — TARGET</span>
+      </div>
+      <p class="target-prompt">Who bears the greater burden of this tax?</p>
+      <div class="target-buttons">
+        <button id="btn-consumer" class="btn btn-consumer btn-target">
+          CONSUMER<br>SHIELD
+        </button>
+        <button id="btn-producer" class="btn btn-producer btn-target">
+          PRODUCER<br>ARMOUR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       LOCKED
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-locked" class="screen">
+    <div class="card card-center">
+      <div class="lock-icon">[ LOCKED ]</div>
+      <h2>SUBMITTED</h2>
+      <p class="text-muted">Watch the projector.</p>
+      <div id="locked-summary" class="locked-summary"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       FINAL INTERCEPT — PHASE 3
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-final-intercept" class="screen">
+    <div class="card">
+      <div class="screen-header">
+        <span class="phase-badge phase-badge-3">PHASE 3</span>
+        <span class="step-label">FINAL INTERCEPT</span>
+      </div>
+      <p class="instruction">
+        A $3 per unit tax is imposed under perfectly inelastic demand (PED = 0).
+        Which analyst is correct?
+      </p>
+      <div class="analyst-cards">
+        <div class="analyst-card">
+          <div class="analyst-label">ANALYST A</div>
+          <table class="analyst-table">
+            <tr><td>New Price</td>          <td class="val">$15</td></tr>
+            <tr><td>Consumer Burden</td>    <td class="val">$3</td></tr>
+            <tr><td>Producer Burden</td>    <td class="val">$0</td></tr>
+          </table>
+          <button class="btn btn-consumer btn-raid" data-choice="A">RAID A</button>
+        </div>
+        <div class="analyst-card">
+          <div class="analyst-label">ANALYST B</div>
+          <table class="analyst-table">
+            <tr><td>New Price</td>          <td class="val">$14</td></tr>
+            <tr><td>Consumer Burden</td>    <td class="val">$2</td></tr>
+            <tr><td>Producer Burden</td>    <td class="val">$1</td></tr>
+          </table>
+          <button class="btn btn-producer btn-raid" data-choice="B">RAID B</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/student.js"></script>
+</body>
+</html>

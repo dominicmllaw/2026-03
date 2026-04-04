@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harbour Intercept — Dashboard</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <header>
+    <h1>HARBOUR INTERCEPT — TEACHER DASHBOARD</h1>
+    <div id="game-status">STATUS: STANDBY</div>
+  </header>
+
+  <main>
+
+    <!-- Phase 1 -->
+    <section id="phase1-section">
+      <h2>Phase 1 — Round A: Inelastic Demand</h2>
+      <div id="phase1-summary" class="summary-row">No data yet.</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Pair</th>
+              <th>Students</th>
+              <th>S1</th>
+              <th>Eq P</th>
+              <th>Eq Q</th>
+              <th>CB</th>
+              <th>Target</th>
+              <th>Correct?</th>
+            </tr>
+          </thead>
+          <tbody id="phase1-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Phase 2 -->
+    <section id="phase2-section">
+      <h2>Phase 2 — Round B: Elastic Demand</h2>
+      <div id="phase2-summary" class="summary-row">No data yet.</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Pair</th>
+              <th>Students</th>
+              <th>S1</th>
+              <th>Eq P</th>
+              <th>Eq Q</th>
+              <th>CB</th>
+              <th>Target</th>
+              <th>Correct?</th>
+            </tr>
+          </thead>
+          <tbody id="phase2-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Phase 3 -->
+    <section id="phase3-section">
+      <h2>Phase 3 — Final Intercept: PED = 0</h2>
+      <div id="phase3-summary" class="summary-row">No data yet.</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Pair</th>
+              <th>Students</th>
+              <th>Raid</th>
+              <th>Correct?</th>
+            </tr>
+          </thead>
+          <tbody id="phase3-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>
