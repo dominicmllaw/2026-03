@@ -5,11 +5,11 @@ import { STUDENTS, PHASES } from './round-data.js';
 // ── Module-level state ────────────────────────────────────────────────────
 let pairId          = null;
 let currentPhaseNum = null;
-let gamePhase       = null;   // tracks last-handled phase to avoid re-runs
+let gamePhase       = null;   // last-handled phase, avoids duplicate runs
 
 const s1State = {
-  attempts: {},  // rowIndex → count of wrong answers
-  correct:  {},  // rowIndex → boolean
+  attempts: {},
+  correct:  {},
 };
 
 const solveState = {
@@ -64,7 +64,6 @@ function initPairSelect() {
 
   STUDENTS.forEach(name => n1Sel.appendChild(new Option(name, name)));
 
-  // Name 2: solo option first, then all names
   n2Sel.appendChild(new Option('— (solo)', '—'));
   STUDENTS.forEach(name => n2Sel.appendChild(new Option(name, name)));
 
@@ -124,7 +123,7 @@ async function handleGameChange(phase) {
     return;
   }
 
-  if (phase === 'phase1' || phase === 'phase2') {
+  if (phase === 'phase1' || phase === 'phase2' || phase === 'phase3') {
     const num  = parseInt(phase.slice(-1));
     const snap = await get(ref(db, `pairs/${pairId}/phase${num}/submitted`));
     if (snap.val() === true) {
@@ -132,25 +131,14 @@ async function handleGameChange(phase) {
     } else {
       startPhase(num);
     }
-    return;
-  }
-
-  if (phase === 'phase3') {
-    const snap = await get(ref(db, `pairs/${pairId}/phase3/submitted`));
-    if (snap.val() === true) {
-      showLocked(3);
-    } else {
-      initPhase3();
-      showScreen('screen-final-intercept');
-    }
   }
 }
 
-// ── Phase 1 & 2 ───────────────────────────────────────────────────────────
+// ── Phase start ───────────────────────────────────────────────────────────
 function startPhase(num) {
-  currentPhaseNum   = num;
-  s1State.attempts  = {};
-  s1State.correct   = { 0: true };  // Row 0 is pre-filled
+  currentPhaseNum    = num;
+  s1State.attempts   = {};
+  s1State.correct    = {};   // all rows require student input
   solveState.eqPrice = null;
   solveState.eqQty   = null;
   solveState.cb      = null;
@@ -169,43 +157,41 @@ function buildS1Gate(num) {
   const taxLabel = phase.taxLabel || `$${phase.tax} per unit tax on producers`;
   document.getElementById('s1-instruction').textContent =
     `The government imposes a ${taxLabel}. ` +
-    `Supply decreases. Add $${phase.tax} to each original supply price ` +
-    `to find the new supply price.`;
+    `Supply decreases. For each price, find the quantity supplied at the ` +
+    `seller's net price (price − $${phase.tax}). ` +
+    `If that price is not shown in the table, enter /.`;
 
   const tbody = document.querySelector('#s1-table tbody');
   tbody.innerHTML = '';
 
-  phase.schedule.forEach((row, i) => {
-    const correctNew = row.price + phase.tax;
-    const tr = document.createElement('tr');
+  // Shared dropdown options: '/' then all unique Qs values in ascending order
+  const qsValues = [...new Set(phase.schedule.map(r => r.qs))].sort((a, b) => a - b);
+  const optHtml  = ['/', ...qsValues]
+    .map(v => `<option value="${v}">${v}</option>`)
+    .join('');
 
-    if (i === 0) {
-      // Pre-filled example row
-      tr.innerHTML = `
-        <td>$${row.price}</td>
-        <td>${row.qd}</td>
-        <td>${row.qs}</td>
-        <td class="cell-prefilled">$${correctNew} <small>(example)</small></td>
-      `;
-    } else {
-      const opts    = buildS1Options(correctNew);
-      const optHtml = opts.map(v => `<option value="${v}">$${v}</option>`).join('');
-      tr.innerHTML = `
-        <td>$${row.price}</td>
-        <td>${row.qd}</td>
-        <td>${row.qs}</td>
-        <td>
-          <select class="s1-sel" data-row="${i}" data-correct="${correctNew}">
-            <option value="">—</option>
-            ${optHtml}
-          </select>
-          <div class="row-hint hidden" id="hint-row-${i}">
-            <img src="assets/hint-s1.png" alt="Hint: add $${phase.tax} to the original supply price"
-                 onerror="this.style.display='none'">
-          </div>
-        </td>
-      `;
-    }
+  phase.schedule.forEach((row, i) => {
+    const sellerPrice = row.price - phase.tax;
+    const match       = phase.schedule.find(r => r.price === sellerPrice);
+    const correctNew  = match ? String(match.qs) : '/';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>$${row.price}</td>
+      <td>${row.qd}</td>
+      <td>${row.qs}</td>
+      <td>
+        <select class="s1-sel" data-row="${i}" data-correct="${correctNew}">
+          <option value="">—</option>
+          ${optHtml}
+        </select>
+        <div class="row-hint hidden" id="hint-row-${i}">
+          <img src="assets/hint-s1.png"
+               alt="Hint: find Qs at seller price $${sellerPrice}"
+               onerror="this.style.display='none'">
+        </div>
+      </td>
+    `;
     tbody.appendChild(tr);
   });
 
@@ -213,8 +199,8 @@ function buildS1Gate(num) {
     sel.addEventListener('change', onS1Change)
   );
 
-  // Replace unlock button to clear previous listener
-  const oldBtn  = document.getElementById('btn-s1-unlock');
+  // Replace unlock button to clear previous event listener
+  const oldBtn   = document.getElementById('btn-s1-unlock');
   const freshBtn = oldBtn.cloneNode(true);
   freshBtn.disabled = true;
   oldBtn.parentNode.replaceChild(freshBtn, oldBtn);
@@ -223,21 +209,11 @@ function buildS1Gate(num) {
   showScreen('screen-s1gate');
 }
 
-function buildS1Options(correct) {
-  const pool = [correct - 2, correct - 1, correct, correct + 1].filter(v => v > 0);
-  // Fisher-Yates shuffle
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool;
-}
-
 function onS1Change(e) {
   const sel     = e.target;
   const rowIdx  = parseInt(sel.dataset.row);
-  const correct = parseInt(sel.dataset.correct);
-  const chosen  = parseInt(sel.value);
+  const correct = sel.dataset.correct;   // string: '/' or e.g. '400'
+  const chosen  = sel.value;             // string
 
   if (!chosen) return;
 
@@ -257,8 +233,7 @@ function onS1Change(e) {
     }
   }
 
-  // Check if all rows complete
-  const phase     = PHASES[currentPhaseNum];
+  const phase      = PHASES[currentPhaseNum];
   const allCorrect = phase.schedule.every((_, i) => s1State.correct[i] === true);
   const btn        = document.getElementById('btn-s1-unlock');
   if (btn) btn.disabled = !allCorrect;
@@ -269,6 +244,32 @@ async function onS1Unlock() {
   buildSolveScreen(currentPhaseNum);
 }
 
+// ── Schedule table helper (reused on solve screen) ────────────────────────
+function buildScheduleTableHTML(num) {
+  const phase = PHASES[num];
+  let html = `
+    <table class="schedule-table">
+      <thead><tr>
+        <th>Price ($)</th><th>Qd</th><th>Original Qs</th><th>New Qty Supplied</th>
+      </tr></thead>
+      <tbody>
+  `;
+  phase.schedule.forEach(row => {
+    const sellerPrice = row.price - phase.tax;
+    const match       = phase.schedule.find(r => r.price === sellerPrice);
+    const newQs       = match ? String(match.qs) : '/';
+    const isEq        = String(row.qd) === newQs;
+    html += `<tr${isEq ? ' class="eq-row"' : ''}>
+      <td>$${row.price}</td>
+      <td>${row.qd}</td>
+      <td>${row.qs}</td>
+      <td><strong>${newQs}</strong></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
 // ── Solve screen ──────────────────────────────────────────────────────────
 function buildSolveScreen(num) {
   const phase = PHASES[num];
@@ -277,8 +278,10 @@ function buildSolveScreen(num) {
   badge.textContent = `PHASE ${num}`;
   badge.className   = `phase-badge phase-badge-${num}`;
 
-  // Rebuild the form entirely to clear any stale listeners
   document.getElementById('solve-form-container').innerHTML = `
+    <div class="table-scroll" style="margin-bottom:20px">
+      ${buildScheduleTableHTML(num)}
+    </div>
     <div class="form-group">
       <label for="sel-eq-price">New equilibrium price ($)</label>
       <select id="sel-eq-price">
@@ -295,7 +298,7 @@ function buildSolveScreen(num) {
     </div>
     <div class="form-group">
       <label for="input-cb">Consumer burden per unit ($)</label>
-      <p class="hint-text">Consumer burden per unit = New price − $${phase.oldEqPrice} (old equilibrium price)</p>
+      <p class="hint-text">Consumer burden = New price − $${phase.oldEqPrice} (old equilibrium price)</p>
       <input type="number" id="input-cb" min="0" max="${phase.tax}" step="1"
              placeholder="Enter a whole number">
     </div>
@@ -312,33 +315,43 @@ function buildSolveScreen(num) {
 }
 
 function validateSolve() {
-  const phase   = PHASES[currentPhaseNum];
-  const eqPrice = document.getElementById('sel-eq-price').value;
-  const eqQty   = document.getElementById('sel-eq-qty').value;
-  const cbRaw   = document.getElementById('input-cb').value.trim();
-  const cbVal   = parseInt(cbRaw);
-  const confirm = document.getElementById('burden-confirm');
-  const btn     = document.getElementById('btn-solve-submit');
+  const phase     = PHASES[currentPhaseNum];
+  const eqPriceEl = document.getElementById('sel-eq-price');
+  const eqQtyEl   = document.getElementById('sel-eq-qty');
+  const eqPrice   = parseInt(eqPriceEl.value);
+  const eqQty     = parseInt(eqQtyEl.value);
+  const cbRaw     = document.getElementById('input-cb').value.trim();
+  const cbVal     = parseInt(cbRaw);
+  const confirm   = document.getElementById('burden-confirm');
+  const btn       = document.getElementById('btn-solve-submit');
 
-  if (!eqPrice || !eqQty || cbRaw === '' || isNaN(cbVal) || cbVal < 0 || cbVal > phase.tax) {
+  const priceOk = !isNaN(eqPrice) && eqPrice === phase.newEqPrice;
+  const qtyOk   = !isNaN(eqQty)   && eqQty   === phase.newEqQty;
+
+  // Red border on wrong eq P / Q after student has made a selection
+  eqPriceEl.classList.toggle('field-wrong', eqPriceEl.value !== '' && !priceOk);
+  eqQtyEl.classList.toggle('field-wrong',   eqQtyEl.value   !== '' && !qtyOk);
+
+  if (cbRaw === '' || isNaN(cbVal) || cbVal < 0 || cbVal > phase.tax) {
     confirm.className = 'burden-confirm hidden';
     btn.disabled = true;
     return;
   }
 
-  const pb = phase.tax - cbVal;
+  const pb   = phase.tax - cbVal;
+  const cbOk = cbVal === phase.consumerBurden;
 
-  if (cbVal === phase.consumerBurden) {
+  if (cbOk) {
     confirm.textContent = `CB $${cbVal} + PB $${pb} = Tax $${phase.tax} ✓`;
     confirm.className   = 'burden-confirm burden-correct';
     solveState.cb = cbVal;
     solveState.pb = pb;
-    btn.disabled  = false;
   } else {
     confirm.textContent = `CB $${cbVal} + PB $${pb} = Tax $${phase.tax} — check your calculation`;
     confirm.className   = 'burden-confirm burden-wrong';
-    btn.disabled = true;
   }
+
+  btn.disabled = !(priceOk && qtyOk && cbOk);
 }
 
 function onSolveConfirm() {
@@ -383,31 +396,10 @@ async function onTargetSelect(target) {
   showLocked(currentPhaseNum);
 }
 
-// ── Phase 3 ───────────────────────────────────────────────────────────────
-function initPhase3() {
-  document.querySelectorAll('.btn-raid').forEach(btn => {
-    btn.disabled = false;
-    btn.onclick  = () => onRaid(btn.dataset.choice);
-  });
-}
-
-async function onRaid(choice) {
-  document.querySelectorAll('.btn-raid').forEach(b => { b.disabled = true; });
-  const data = {
-    raidChoice:  choice,
-    raidCorrect: choice === PHASES[3].correctRaid,
-    submitted:   true,
-  };
-  await set(ref(db, `pairs/${pairId}/phase3`), data);
-  showLocked(3);
-}
-
 // ── Locked screen ─────────────────────────────────────────────────────────
 function showLocked(phaseNum) {
   const el = document.getElementById('locked-summary');
-  if (phaseNum === 3) {
-    el.textContent = 'Your raid has been filed.';
-  } else if (solveState.cb !== null) {
+  if (solveState.cb !== null) {
     el.textContent =
       `Phase ${phaseNum} · New Eq: P=$${solveState.eqPrice} Q=${solveState.eqQty} · ` +
       `CB $${solveState.cb} + PB $${solveState.pb} = Tax $${PHASES[phaseNum].tax}`;

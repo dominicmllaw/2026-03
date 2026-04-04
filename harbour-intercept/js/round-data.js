@@ -92,10 +92,27 @@ export const PHASES = {
     eqQtyOptions:   [50, 55, 60, 65, 70, 75, 80, 85, 90],
   },
   3: {
-    label: 'Final Intercept — PED = 0',
+    label:    'Final Intercept — PED = 0',
+    // Constructed scenario: perfectly inelastic demand (Qd constant at 60).
+    // Students discover that ALL burden falls on consumers when PED = 0.
+    // Old eq P=$14, Q=60. After $3 tax: new eq P_c=$17, Q=60. CB=$3, PB=$0.
+    taxLabel: '$3 per unit tax on producers',
     tax: 3,
-    cardA: { newPrice: 15, cb: 3, pb: 0, correct: true  },  // Correct
-    cardB: { newPrice: 14, cb: 2, pb: 1, correct: false },  // Misconception
-    correctRaid: 'A',
+    schedule: [
+      { price: 13, qd: 60, qs: 50 },
+      { price: 14, qd: 60, qs: 60 },  // ← old equilibrium
+      { price: 15, qd: 60, qs: 70 },
+      { price: 16, qd: 60, qs: 80 },
+      { price: 17, qd: 60, qs: 90 },
+    ],
+    oldEqPrice: 14,
+    oldEqQty:   60,
+    newEqPrice: 17,   // CB = 17 − 14 = 3 = full tax; PB = 0
+    newEqQty:   60,
+    consumerBurden: 3,
+    producerBurden: 0,
+    correctTarget: 'consumer',  // Consumer Shield — ALL burden on consumers
+    eqPriceOptions: [13, 14, 15, 16, 17, 18, 19, 20],
+    eqQtyOptions:   [50, 55, 60, 65, 70, 75, 80, 85, 90],
   },
 };

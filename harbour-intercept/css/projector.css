@@ -50,42 +50,88 @@ html, body {
 .phase-phase3 { color: #c084fc; border-color: #7c3aed; }
 
 /* ── Boss display ────────────────────────────────────────────────────────── */
-#boss-display { text-align: center; }
+#boss-display { text-align: center; width: 100%; max-width: 480px; }
 
 .boss-name {
   font-size: 2.8rem;
   font-weight: 900;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   color: #e2e8f0;
 }
 
-#armour-layers {
+/* ── HP Bar ──────────────────────────────────────────────────────────────── */
+#hp-container { width: 100%; }
+
+.hp-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+#hp-bar-track {
+  width: 100%;
+  height: 28px;
+  background: #1e293b;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+#hp-bar-fill {
+  height: 100%;
+  border-radius: 14px;
+  transition: width 0.8s ease, background-color 0.5s;
+  width: 100%;
+}
+
+.hp-high { background: #22c55e; }
+.hp-mid  { background: #f59e0b; }
+.hp-low  { background: #ef4444; }
+
+#hp-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* ── End game overlay ────────────────────────────────────────────────────── */
+#endgame-overlay {
+  position: fixed;
+  inset: 0;
   display: flex;
-  gap: 14px;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 20px;
+  background: rgba(10, 15, 30, 0.94);
+  z-index: 300;
+  text-align: center;
+  padding: 40px;
 }
+#endgame-overlay.hidden { display: none; }
 
-.armour-layer {
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  transition: opacity 0.6s;
+#endgame-title {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
-
-.armour-intact  { background: #1d4ed8; border: 2px solid #3b82f6; opacity: 1; }
-.armour-cracked { background: #1e293b; border: 2px solid #334155; opacity: 0.2; }
-
-@keyframes crack-anim {
-  0%   { transform: scale(1) rotate(0deg); opacity: 1; }
-  20%  { transform: scale(1.25) rotate(-8deg); }
-  40%  { transform: scale(0.85) rotate(6deg); }
-  60%  { transform: scale(1.1) rotate(-3deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 0.2; }
+#endgame-subtitle {
+  font-size: 1.2rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  max-width: 600px;
 }
-
-.armour-cracking { animation: crack-anim 0.9s ease forwards; }
+#endgame-overlay.victory #endgame-title { color: #4ade80; }
+#endgame-overlay.defeat  #endgame-title { color: #f87171; }
 
 /* ── Submission counter ──────────────────────────────────────────────────── */
 #submission-counter {

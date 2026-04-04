@@ -17,36 +17,16 @@
 
     <div id="boss-display">
       <div class="boss-name">THE INCIDENCE</div>
-      <div id="armour-layers">
-        <div class="armour-layer armour-intact" id="armour-3" title="Armour 3"></div>
-        <div class="armour-layer armour-intact" id="armour-2" title="Armour 2"></div>
-        <div class="armour-layer armour-intact" id="armour-1" title="Armour 1"></div>
+      <div id="hp-container">
+        <div class="hp-label">BOSS HP</div>
+        <div id="hp-bar-track">
+          <div id="hp-bar-fill" class="hp-high"></div>
+        </div>
+        <div id="hp-value">27 / 27</div>
       </div>
     </div>
 
     <div id="submission-counter"></div>
-
-    <!-- Phase 3 analyst display -->
-    <div id="analyst-display" class="hidden">
-      <div class="proj-analyst-cards">
-        <div class="proj-analyst-card">
-          <div class="proj-analyst-label">Analyst A</div>
-          <table class="proj-analyst-table">
-            <tr><td>New Price</td>       <td>$15</td></tr>
-            <tr><td>Consumer Burden</td> <td>$3</td></tr>
-            <tr><td>Producer Burden</td> <td>$0</td></tr>
-          </table>
-        </div>
-        <div class="proj-analyst-card">
-          <div class="proj-analyst-label">Analyst B</div>
-          <table class="proj-analyst-table">
-            <tr><td>New Price</td>       <td>$14</td></tr>
-            <tr><td>Consumer Burden</td> <td>$2</td></tr>
-            <tr><td>Producer Burden</td> <td>$1</td></tr>
-          </table>
-        </div>
-      </div>
-    </div>
 
     <!-- Reveal results -->
     <div id="reveal-results" class="hidden">
@@ -58,6 +38,12 @@
 
   <!-- Full-screen retaliation flash -->
   <div id="retaliation-overlay"></div>
+
+  <!-- End game overlay (shown after Phase 3 reveal) -->
+  <div id="endgame-overlay" class="hidden">
+    <div id="endgame-title"></div>
+    <div id="endgame-subtitle"></div>
+  </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
        TEACHER CONTROL PANEL  (press T to toggle)
