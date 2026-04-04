@@ -10,13 +10,13 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 const firebaseConfig = {
-  apiKey:            'REPLACE_WITH_YOUR_API_KEY',
-  authDomain:        'REPLACE_WITH_YOUR_PROJECT_ID.firebaseapp.com',
-  databaseURL:       'https://REPLACE_WITH_YOUR_PROJECT_ID-default-rtdb.firebaseio.com',
-  projectId:         'REPLACE_WITH_YOUR_PROJECT_ID',
-  storageBucket:     'REPLACE_WITH_YOUR_PROJECT_ID.appspot.com',
-  messagingSenderId: 'REPLACE_WITH_YOUR_SENDER_ID',
-  appId:             'REPLACE_WITH_YOUR_APP_ID',
+  apiKey:            'AIzaSyCKaRlFlPnPhGMbOVFLi66wDThiGXbi10A',
+  authDomain:        'harbour-intercept-ea99a.firebaseapp.com',
+  databaseURL:       'https://harbour-intercept-ea99a-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId:         'harbour-intercept-ea99a',
+  storageBucket:     'harbour-intercept-ea99a.firebasestorage.app',
+  messagingSenderId: '1014642674578',
+  appId:             '1:1014642674578:web:ad5b11607fb68432644f4b',
 };
 
 const app = initializeApp(firebaseConfig);

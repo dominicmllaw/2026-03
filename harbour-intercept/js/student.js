@@ -166,8 +166,9 @@ function buildS1Gate(num) {
   badge.textContent = `PHASE ${num}`;
   badge.className   = `phase-badge phase-badge-${num}`;
 
+  const taxLabel = phase.taxLabel || `$${phase.tax} per unit tax on producers`;
   document.getElementById('s1-instruction').textContent =
-    `The government imposes a $${phase.tax} per unit tax on producers. ` +
+    `The government imposes a ${taxLabel}. ` +
     `Supply decreases. Add $${phase.tax} to each original supply price ` +
     `to find the new supply price.`;
 
@@ -294,7 +295,7 @@ function buildSolveScreen(num) {
     </div>
     <div class="form-group">
       <label for="input-cb">Consumer burden per unit ($)</label>
-      <p class="hint-text">Consumer burden per unit = New price − Old price</p>
+      <p class="hint-text">Consumer burden per unit = New price − $${phase.oldEqPrice} (old equilibrium price)</p>
       <input type="number" id="input-cb" min="0" max="${phase.tax}" step="1"
              placeholder="Enter a whole number">
     </div>
