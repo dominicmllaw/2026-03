@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harbour Intercept — Projector</title>
+  <link rel="stylesheet" href="css/projector.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PROJECTOR MAIN DISPLAY
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="projector-main">
+
+    <div id="phase-indicator">STANDBY — PREPARING TO LAUNCH</div>
+
+    <div id="boss-display">
+      <div class="boss-name">THE INCIDENCE</div>
+      <div id="armour-layers">
+        <div class="armour-layer armour-intact" id="armour-3" title="Armour 3"></div>
+        <div class="armour-layer armour-intact" id="armour-2" title="Armour 2"></div>
+        <div class="armour-layer armour-intact" id="armour-1" title="Armour 1"></div>
+      </div>
+    </div>
+
+    <div id="submission-counter"></div>
+
+    <!-- Phase 3 analyst display -->
+    <div id="analyst-display" class="hidden">
+      <div class="proj-analyst-cards">
+        <div class="proj-analyst-card">
+          <div class="proj-analyst-label">Analyst A</div>
+          <table class="proj-analyst-table">
+            <tr><td>New Price</td>       <td>$15</td></tr>
+            <tr><td>Consumer Burden</td> <td>$3</td></tr>
+            <tr><td>Producer Burden</td> <td>$0</td></tr>
+          </table>
+        </div>
+        <div class="proj-analyst-card">
+          <div class="proj-analyst-label">Analyst B</div>
+          <table class="proj-analyst-table">
+            <tr><td>New Price</td>       <td>$14</td></tr>
+            <tr><td>Consumer Burden</td> <td>$2</td></tr>
+            <tr><td>Producer Burden</td> <td>$1</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reveal results -->
+    <div id="reveal-results" class="hidden">
+      <div id="result-a" class="result-bar result-bar-a"></div>
+      <div id="result-b" class="result-bar result-bar-b"></div>
+    </div>
+
+  </div>
+
+  <!-- Full-screen retaliation flash -->
+  <div id="retaliation-overlay"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       TEACHER CONTROL PANEL  (press T to toggle)
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div id="teacher-panel" class="hidden">
+    <div class="panel-title">TEACHER CONTROLS · press T to close</div>
+    <div class="panel-section">
+      <button class="btn-panel"        id="btn-phase0">Standby</button>
+      <button class="btn-panel btn-phase1" id="btn-phase1">→ Phase 1</button>
+      <button class="btn-panel btn-phase2" id="btn-phase2">→ Phase 2</button>
+      <button class="btn-panel btn-phase3" id="btn-phase3">→ Phase 3</button>
+    </div>
+    <div class="panel-section">
+      <button class="btn-panel btn-reveal" id="btn-reveal">Trigger Reveal</button>
+      <button class="btn-panel btn-reset"  id="btn-reset">Reset Game</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/projector.js"></script>
+</body>
+</html>

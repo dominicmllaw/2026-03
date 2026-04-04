@@ -1,0 +1,377 @@
+/* HARBOUR INTERCEPT — Student CSS */
+:root {
+  --bg:            #0a0f1e;
+  --consumer:      #2563eb;
+  --consumer-dark: #1d4ed8;
+  --producer:      #d97706;
+  --producer-dark: #b45309;
+  --danger:        #dc2626;
+  --success:       #16a34a;
+  --text:          #f1f5f9;
+  --text-muted:    #94a3b8;
+  --card-bg:       #1e293b;
+  --input-bg:      #0f172a;
+  --border:        #334155;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.loading { visibility: hidden; }
+
+/* ── Screens ─────────────────────────────────────────────────────────────── */
+.screen {
+  display: none;
+  min-height: 100vh;
+  padding: 16px;
+  justify-content: center;
+  align-items: flex-start;
+}
+.screen.active { display: flex; }
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.card {
+  width: 100%;
+  max-width: 500px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.card h1 {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+
+.card h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-center {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  padding-top: 56px;
+}
+
+/* ── Form elements ───────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 16px; }
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+select,
+input[type='number'] {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+select:focus,
+input[type='number']:focus {
+  outline: 2px solid var(--consumer);
+  outline-offset: 2px;
+}
+
+select option { background: #1e293b; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: opacity 0.15s, filter 0.15s;
+  text-transform: uppercase;
+}
+
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn:not(:disabled):active { filter: brightness(0.88); }
+
+.btn-primary  { background: var(--consumer); color: #fff; }
+.btn-consumer { background: var(--consumer); color: #fff; }
+.btn-producer { background: var(--producer); color: #fff; }
+
+/* ── Screen header ───────────────────────────────────────────────────────── */
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.phase-badge {
+  background: #475569;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.phase-badge-1 { background: var(--consumer); }
+.phase-badge-2 { background: var(--producer); }
+.phase-badge-3 { background: #7c3aed; }
+
+.step-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Standby ─────────────────────────────────────────────────────────────── */
+.text-muted { color: var(--text-muted); }
+
+.pair-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--consumer);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(0.75); }
+}
+
+/* ── S1 Gate ─────────────────────────────────────────────────────────────── */
+.instruction {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  background: var(--input-bg);
+  border-left: 3px solid var(--consumer);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.table-scroll { overflow-x: auto; margin-bottom: 16px; }
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  min-width: 320px;
+}
+
+.schedule-table th {
+  text-align: left;
+  padding: 8px 10px;
+  background: var(--input-bg);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+}
+
+.schedule-table td {
+  padding: 10px;
+  border-bottom: 1px solid #1e2d3d;
+  vertical-align: middle;
+}
+
+.schedule-table select {
+  padding: 8px 10px;
+  font-size: 0.88rem;
+}
+
+.s1-correct { border-color: var(--success) !important; }
+.s1-wrong   { border-color: var(--danger)  !important; }
+
+.cell-prefilled {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.cell-prefilled small {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.row-hint { margin-top: 8px; }
+.row-hint.hidden { display: none; }
+
+.row-hint img {
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+/* ── Solve screen ────────────────────────────────────────────────────────── */
+.hint-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.burden-confirm {
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.burden-confirm.hidden { display: none; }
+
+.burden-correct {
+  background: rgba(22, 163, 74, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(22, 163, 74, 0.4);
+}
+.burden-wrong {
+  background: rgba(220, 38, 38, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+}
+
+/* ── Target screen ───────────────────────────────────────────────────────── */
+.target-prompt {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.target-buttons {
+  display: flex;
+  gap: 14px;
+}
+
+.btn-target {
+  flex: 1;
+  padding: 36px 12px;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  border-radius: 10px;
+  border: 2px solid transparent;
+}
+
+#btn-consumer.btn-target { border-color: #3b82f6; }
+#btn-producer.btn-target { border-color: #f59e0b; }
+
+/* ── Locked screen ───────────────────────────────────────────────────────── */
+.lock-icon {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+.locked-summary {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 10px 14px;
+  background: var(--input-bg);
+  border-radius: 6px;
+  line-height: 1.5;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+/* ── Phase 3 analyst cards ───────────────────────────────────────────────── */
+.analyst-cards {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.analyst-card {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.analyst-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.analyst-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.analyst-table td {
+  padding: 5px 0;
+  border-bottom: 1px solid #1e2d3d;
+  vertical-align: middle;
+}
+
+.analyst-table .val {
+  text-align: right;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.btn-raid { padding: 12px; font-size: 0.88rem; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 420px) {
+  .target-buttons  { flex-direction: column; }
+  .analyst-cards   { flex-direction: column; }
+  .card            { padding: 18px; }
+}

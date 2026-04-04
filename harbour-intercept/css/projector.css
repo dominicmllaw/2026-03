@@ -1,0 +1,245 @@
+/* HARBOUR INTERCEPT — Projector CSS */
+:root {
+  --bg:       #0a0f1e;
+  --consumer: #2563eb;
+  --producer: #d97706;
+  --danger:   #dc2626;
+  --success:  #16a34a;
+  --text:     #f1f5f9;
+  --muted:    #94a3b8;
+  --border:   #334155;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ── Main projector display ──────────────────────────────────────────────── */
+#projector-main {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 40px;
+  position: relative;
+}
+
+/* ── Phase indicator ─────────────────────────────────────────────────────── */
+#phase-indicator {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 8px 20px;
+  border-radius: 4px;
+  transition: color 0.4s, border-color 0.4s;
+}
+
+.phase-phase1 { color: #60a5fa; border-color: var(--consumer); }
+.phase-phase2 { color: #fbbf24; border-color: var(--producer); }
+.phase-phase3 { color: #c084fc; border-color: #7c3aed; }
+
+/* ── Boss display ────────────────────────────────────────────────────────── */
+#boss-display { text-align: center; }
+
+.boss-name {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  color: #e2e8f0;
+}
+
+#armour-layers {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+}
+
+.armour-layer {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  transition: opacity 0.6s;
+}
+
+.armour-intact  { background: #1d4ed8; border: 2px solid #3b82f6; opacity: 1; }
+.armour-cracked { background: #1e293b; border: 2px solid #334155; opacity: 0.2; }
+
+@keyframes crack-anim {
+  0%   { transform: scale(1) rotate(0deg); opacity: 1; }
+  20%  { transform: scale(1.25) rotate(-8deg); }
+  40%  { transform: scale(0.85) rotate(6deg); }
+  60%  { transform: scale(1.1) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 0.2; }
+}
+
+.armour-cracking { animation: crack-anim 0.9s ease forwards; }
+
+/* ── Submission counter ──────────────────────────────────────────────────── */
+#submission-counter {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  min-height: 2rem;
+}
+
+/* ── Phase 3 analyst display ─────────────────────────────────────────────── */
+#analyst-display { width: 100%; max-width: 640px; }
+#analyst-display.hidden { display: none; }
+
+.proj-analyst-cards {
+  display: flex;
+  gap: 20px;
+}
+
+.proj-analyst-card {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.proj-analyst-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.proj-analyst-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+
+.proj-analyst-table td {
+  padding: 6px 0;
+  border-bottom: 1px solid #334155;
+}
+
+.proj-analyst-table td:last-child {
+  text-align: right;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+/* ── Reveal results ──────────────────────────────────────────────────────── */
+#reveal-results {
+  display: flex;
+  gap: 28px;
+  align-items: stretch;
+}
+#reveal-results.hidden { display: none; }
+
+.result-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 32px;
+  border-radius: 10px;
+  min-width: 220px;
+}
+
+.result-bar-a { background: rgba(37, 99, 235, 0.2); border: 2px solid var(--consumer); }
+.result-bar-b { background: rgba(217, 119, 6,  0.2); border: 2px solid var(--producer); }
+
+.result-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.result-number {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-left: auto;
+  line-height: 1;
+}
+
+/* ── Retaliation overlay ─────────────────────────────────────────────────── */
+#retaliation-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(220, 38, 38, 0);
+}
+
+@keyframes retaliate {
+  0%   { background: rgba(220, 38, 38, 0); }
+  15%  { background: rgba(220, 38, 38, 0.45); }
+  35%  { background: rgba(220, 38, 38, 0.05); }
+  55%  { background: rgba(220, 38, 38, 0.35); }
+  75%  { background: rgba(220, 38, 38, 0.05); }
+  100% { background: rgba(220, 38, 38, 0); }
+}
+
+#retaliation-overlay.active {
+  animation: retaliate 2.2s ease;
+}
+
+/* ── Teacher control panel ───────────────────────────────────────────────── */
+#teacher-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10, 15, 30, 0.97);
+  border-top: 1px solid #334155;
+  padding: 14px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 200;
+}
+#teacher-panel.hidden { display: none; }
+
+.panel-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.panel-section {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-panel {
+  padding: 8px 18px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: background 0.15s;
+}
+.btn-panel:hover { background: #334155; }
+
+.btn-phase1 { border-color: var(--consumer); }
+.btn-phase2 { border-color: var(--producer); }
+.btn-phase3 { border-color: #7c3aed; }
+.btn-reveal { border-color: var(--success); color: #4ade80; }
+.btn-reset  { border-color: var(--danger);  color: #f87171; }
