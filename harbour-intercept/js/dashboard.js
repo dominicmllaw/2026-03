@@ -87,7 +87,7 @@ function renderPhase3Table(pairs) {
     return;
   }
 
-  let submitted = 0, raidA = 0, raidB = 0;
+  let submitted = 0, consumers = 0, producers = 0;
 
   sorted.forEach(([pairId, pairData]) => {
     const pd  = pairData.phase3 || {};
@@ -97,11 +97,15 @@ function renderPhase3Table(pairs) {
 
     if (pd.submitted) {
       submitted++;
-      if (pd.raidChoice === 'A') raidA++;
-      if (pd.raidChoice === 'B') raidB++;
+      if (pd.target === 'consumer') consumers++;
+      if (pd.target === 'producer') producers++;
     }
 
-    const isCorrect = pd.submitted && pd.raidChoice === PHASES[3].correctRaid;
+    const targetLabel =
+      pd.target === 'consumer' ? 'Consumer Shield' :
+      pd.target === 'producer' ? 'Producer Armour' : '—';
+
+    const isCorrect = pd.submitted && pd.target === PHASES[3].correctTarget;
     const correctTd = pd.submitted
       ? `<td class="${isCorrect ? 'cell-correct' : 'cell-wrong'}">${isCorrect ? 'Yes' : 'No'}</td>`
       : '<td class="cell-pending">—</td>';
@@ -112,7 +116,7 @@ function renderPhase3Table(pairs) {
     tr.innerHTML = `
       <td>${num}</td>
       <td>${n1}${n2}</td>
-      <td>${pd.raidChoice ? 'Analyst ' + pd.raidChoice : '—'}</td>
+      <td>${targetLabel}</td>
       ${correctTd}
     `;
     tbody.appendChild(tr);
@@ -120,5 +124,5 @@ function renderPhase3Table(pairs) {
 
   summaryEl.textContent =
     `${submitted} / ${sorted.length} submitted · ` +
-    `Raid A: ${raidA} · Raid B: ${raidB}`;
+    `Consumer Shield: ${consumers} · Producer Armour: ${producers}`;
 }
