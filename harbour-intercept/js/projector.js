@@ -1,13 +1,16 @@
 // HARBOUR INTERCEPT — Projector App
-import { db, ref, set, get, onValue, remove } from './firebase-config.js';
+import { db, ref, set, onValue, remove } from './firebase-config.js';
 import { PHASES } from './round-data.js';
 
 // ── State ─────────────────────────────────────────────────────────────────
 let currentPhase        = 'standby';
 let revealActive        = false;
 let revealAnimationDone = false;
-let armourHealth        = 3;    // 3 layers; cracks on each correct majority
 let pairsData           = {};
+
+// Total HP = 15 pairs × 3 phases × 60% win threshold = 27
+// Each correct answer across any phase deducts 1 HP.
+const BOSS_MAX_HP = Math.round(15 * 3 * 0.6);   // 27
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 't' || e.key === 'T') togglePanel();
   });
 
-  updateArmour();
+  updateHPBar();
 });
 
 function togglePanel() {
@@ -49,12 +52,15 @@ async function resetGame() {
   if (!confirm('Reset ALL game data? This cannot be undone.')) return;
   await set(ref(db, 'game'), { currentPhase: 'standby', revealTriggered: false });
   await remove(ref(db, 'pairs'));
-  armourHealth        = 3;
+  pairsData           = {};
   revealActive        = false;
   revealAnimationDone = false;
-  updateArmour();
+  updateHPBar();
   document.getElementById('reveal-results').classList.add('hidden');
   document.getElementById('retaliation-overlay').classList.remove('active');
+  const eg = document.getElementById('endgame-overlay');
+  eg.classList.add('hidden');
+  eg.classList.remove('victory', 'defeat');
   document.getElementById('submission-counter').textContent = '';
 }
 
@@ -67,9 +73,7 @@ function subscribeGame() {
 
     currentPhase = phase;
 
-    // On reveal toggle
     if (!revealed && revealActive) {
-      // Reveal was reset — clear display
       revealActive        = false;
       revealAnimationDone = false;
       document.getElementById('reveal-results').classList.add('hidden');
@@ -79,7 +83,6 @@ function subscribeGame() {
     revealActive = revealed;
 
     updatePhaseDisplay(phase);
-    updateAnalystDisplay(phase);
     updateSubmissionCounter();
 
     if (revealed && !revealAnimationDone) {
@@ -94,19 +97,10 @@ function updatePhaseDisplay(phase) {
     standby: 'STANDBY — PREPARING TO LAUNCH',
     phase1:  'PHASE 1 — ROUND A: INELASTIC DEMAND',
     phase2:  'PHASE 2 — ROUND B: ELASTIC DEMAND',
-    phase3:  'PHASE 3 — FINAL INTERCEPT',
+    phase3:  'PHASE 3 — FINAL INTERCEPT: PED = 0',
   };
   el.textContent = labels[phase] || phase.toUpperCase();
   el.className   = `phase-${phase}`;
-}
-
-function updateAnalystDisplay(phase) {
-  const el = document.getElementById('analyst-display');
-  if (phase === 'phase3') {
-    el.classList.remove('hidden');
-  } else {
-    el.classList.add('hidden');
-  }
 }
 
 // ── Pairs subscription ────────────────────────────────────────────────────
@@ -114,10 +108,11 @@ function subscribePairs() {
   onValue(ref(db, 'pairs'), snapshot => {
     pairsData = snapshot.val() || {};
     updateSubmissionCounter();
+    updateHPBar();
     if (revealActive && !revealAnimationDone) {
       showRevealResults();
     } else if (revealActive) {
-      updateResultDisplay();  // keep counts live without re-triggering animation
+      updateResultDisplay();
     }
   });
 }
@@ -126,13 +121,32 @@ function updateSubmissionCounter() {
   const el = document.getElementById('submission-counter');
   if (!currentPhase.startsWith('phase')) { el.textContent = ''; return; }
 
-  const phaseKey = currentPhase;
-  const total    = Math.max(Object.keys(pairsData).length, 1);
+  const total     = Math.max(Object.keys(pairsData).length, 1);
   const submitted = Object.values(pairsData).filter(
-    p => p[phaseKey]?.submitted === true
+    p => p[currentPhase]?.submitted === true
   ).length;
 
   el.textContent = `${submitted} / ${total} pairs submitted`;
+}
+
+// ── HP Bar ────────────────────────────────────────────────────────────────
+function computeHP() {
+  let correct = 0;
+  Object.values(pairsData).forEach(pair => {
+    if (pair.phase1?.targetCorrect === true) correct++;
+    if (pair.phase2?.targetCorrect === true) correct++;
+    if (pair.phase3?.targetCorrect === true) correct++;
+  });
+  return Math.max(0, BOSS_MAX_HP - correct);
+}
+
+function updateHPBar() {
+  const hp  = computeHP();
+  const pct = BOSS_MAX_HP > 0 ? hp / BOSS_MAX_HP * 100 : 100;
+  document.getElementById('hp-bar-fill').style.width = pct + '%';
+  document.getElementById('hp-value').textContent    = `${hp} / ${BOSS_MAX_HP}`;
+  document.getElementById('hp-bar-fill').className   =
+    pct > 60 ? 'hp-high' : pct > 30 ? 'hp-mid' : 'hp-low';
 }
 
 // ── Reveal ────────────────────────────────────────────────────────────────
@@ -142,11 +156,14 @@ function showRevealResults() {
   if (!result) return;
 
   updateResultDisplay();
+  updateHPBar();   // animate HP bar dropping on correct reveals
 
-  if (result.majorityCorrect) {
-    crackArmour();
-  } else {
+  if (!result.majorityCorrect) {
     bossRetaliate();
+  }
+
+  if (currentPhase === 'phase3') {
+    setTimeout(checkEndGame, 2500);
   }
 }
 
@@ -154,9 +171,7 @@ function updateResultDisplay() {
   const result = computeResult();
   if (!result) return;
 
-  const revealEl = document.getElementById('reveal-results');
-  revealEl.classList.remove('hidden');
-
+  document.getElementById('reveal-results').classList.remove('hidden');
   document.getElementById('result-a').innerHTML =
     `<span class="result-label">${result.labelA}</span>` +
     `<span class="result-number">${result.countA}</span>`;
@@ -168,23 +183,11 @@ function updateResultDisplay() {
 function computeResult() {
   if (!currentPhase.startsWith('phase')) return null;
 
-  const all = Object.values(pairsData);
-
-  if (currentPhase === 'phase3') {
-    const countA = all.filter(p => p.phase3?.raidChoice === 'A').length;
-    const countB = all.filter(p => p.phase3?.raidChoice === 'B').length;
-    return {
-      countA, countB,
-      labelA: 'RAID A',
-      labelB: 'RAID B',
-      majorityCorrect: PHASES[3].correctRaid === 'A' ? countA >= countB : countB >= countA,
-    };
-  }
-
-  const num     = parseInt(currentPhase.slice(-1));
-  const phase   = PHASES[num];
-  const countA  = all.filter(p => p[currentPhase]?.target === 'consumer').length;
-  const countB  = all.filter(p => p[currentPhase]?.target === 'producer').length;
+  const num    = parseInt(currentPhase.slice(-1));
+  const phase  = PHASES[num];
+  const all    = Object.values(pairsData);
+  const countA = all.filter(p => p[currentPhase]?.target === 'consumer').length;
+  const countB = all.filter(p => p[currentPhase]?.target === 'producer').length;
   const correct = phase.correctTarget;
 
   return {
@@ -197,32 +200,29 @@ function computeResult() {
   };
 }
 
-// ── Armour / Boss animations ──────────────────────────────────────────────
-function updateArmour() {
-  for (let i = 1; i <= 3; i++) {
-    const layer = document.getElementById(`armour-${i}`);
-    if (!layer) continue;
-    layer.className = `armour-layer ${i <= armourHealth ? 'armour-intact' : 'armour-cracked'}`;
-  }
-}
-
-function crackArmour() {
-  if (armourHealth <= 0) return;
-  const layer = document.getElementById(`armour-${armourHealth}`);
-  if (!layer) return;
-
-  layer.classList.add('armour-cracking');
-  setTimeout(() => {
-    layer.classList.remove('armour-cracking');
-    layer.classList.replace('armour-intact', 'armour-cracked');
-    armourHealth--;
-  }, 950);
-}
-
+// ── Boss retaliation ──────────────────────────────────────────────────────
 function bossRetaliate() {
   const overlay = document.getElementById('retaliation-overlay');
   overlay.classList.remove('active');
-  // Force reflow so the animation restarts
-  void overlay.offsetWidth;
+  void overlay.offsetWidth;   // force reflow so animation restarts
   overlay.classList.add('active');
+}
+
+// ── End game (shown after Phase 3 reveal) ─────────────────────────────────
+function checkEndGame() {
+  const hp      = computeHP();
+  const overlay = document.getElementById('endgame-overlay');
+  overlay.classList.remove('hidden', 'victory', 'defeat');
+
+  if (hp <= 0) {
+    document.getElementById('endgame-title').textContent    = 'HARBOUR SECURED';
+    document.getElementById('endgame-subtitle').textContent =
+      'The class exposed the tax burden. Mission complete.';
+    overlay.classList.add('victory');
+  } else {
+    document.getElementById('endgame-title').textContent    = 'HARBOUR LOST';
+    document.getElementById('endgame-subtitle').textContent =
+      `Boss survives with ${hp} HP. More pairs need to intercept correctly next time.`;
+    overlay.classList.add('defeat');
+  }
 }
