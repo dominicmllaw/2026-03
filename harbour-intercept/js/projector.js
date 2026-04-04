@@ -50,7 +50,7 @@ function triggerReveal() {
 
 async function resetGame() {
   if (!confirm('Reset ALL game data? This cannot be undone.')) return;
-  await set(ref(db, 'game'), { currentPhase: 'standby', revealTriggered: false });
+  await set(ref(db, 'game'), { currentPhase: 'standby', revealTriggered: false, resetAt: Date.now() });
   await remove(ref(db, 'pairs'));
   pairsData           = {};
   revealActive        = false;

@@ -101,6 +101,10 @@ async function onPairEnter() {
   await set(ref(db, `pairs/${pairId}/name1`), n1);
   await set(ref(db, `pairs/${pairId}/name2`), n2);
 
+  // Snapshot current resetAt so we don't get bounced back immediately
+  const gameSnap = await get(ref(db, 'game/resetAt'));
+  localStorage.setItem('game_resetAt', String(gameSnap.val() || 0));
+
   updateStandbyBadge();
   showScreen('screen-standby');
   subscribeGame();
@@ -109,8 +113,21 @@ async function onPairEnter() {
 // ── Game state subscription ───────────────────────────────────────────────
 function subscribeGame() {
   onValue(ref(db, 'game'), snapshot => {
-    const phase = (snapshot.val() || {}).currentPhase || 'standby';
-    handleGameChange(phase);
+    const game    = snapshot.val() || {};
+    const resetAt = game.resetAt || 0;
+    const stored  = parseInt(localStorage.getItem('game_resetAt') || '0');
+
+    if (resetAt !== stored) {
+      // Teacher pressed RESET — clear registration and return to pair select
+      localStorage.removeItem('pairId');
+      localStorage.removeItem('name1');
+      localStorage.removeItem('name2');
+      localStorage.setItem('game_resetAt', String(resetAt));
+      location.reload();
+      return;
+    }
+
+    handleGameChange(game.currentPhase || 'standby');
   });
 }
 
