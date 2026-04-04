@@ -28,7 +28,7 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 28px;
-  padding: 40px;
+  padding: 40px 40px 160px;   /* bottom clears fixed teacher panel */
   position: relative;
 }
 
