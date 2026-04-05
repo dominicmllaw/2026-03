@@ -27,7 +27,7 @@ const solveState = {
 };
 
 // ── Stage timer ───────────────────────────────────────────────────────────
-const STAGE_DURATION = 2 * 60 * 1000;   // 2 minutes
+const STAGE_DURATION = (2 * 60 + 30) * 1000;   // 2 minutes 30 seconds
 let timerInterval = null;
 
 function startTimer(fillId, onExpiry) {
@@ -49,6 +49,13 @@ function startTimer(fillId, onExpiry) {
     fill.className        = 'timer-bar-fill' +
       (pct < 20 ? ' danger' : pct < 45 ? ' warning' : '');
 
+    // EVA-style alert in last 15 seconds
+    if (remaining > 0 && remaining <= 15000) {
+      document.body.classList.add('eva-alert');
+    } else {
+      document.body.classList.remove('eva-alert');
+    }
+
     if (remaining <= 0) {
       stopTimer();
       fill.style.width = '0%';
@@ -59,6 +66,7 @@ function startTimer(fillId, onExpiry) {
 
 function stopTimer() {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  document.body.classList.remove('eva-alert');
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────
@@ -262,7 +270,7 @@ function buildSupplyShiftGate(num, phase) {
 
   const qsValues = [...new Set(phase.schedule.map(r => r.qs))].sort((a, b) => a - b);
   const optHtml  = ['/', ...qsValues]
-    .map(v => `<option value="${v}">${v}</option>`)
+    .map(v => `<option value="${v}">${v === '/' ? '/' : v + ' units'}</option>`)
     .join('');
 
   phase.schedule.forEach((row, i) => {
@@ -326,7 +334,7 @@ function buildDemandOnlyGate(num, phase) {
   freshBtn.textContent = 'PROCEED →';
   oldBtn.parentNode.replaceChild(freshBtn, oldBtn);
 
-  const optHtml = phase.eqQtyOptions.map(v => `<option value="${v}">${v}</option>`).join('');
+  const optHtml = phase.eqQtyOptions.map(v => `<option value="${v}">${v} units</option>`).join('');
   const qForm   = document.createElement('div');
   qForm.id      = 'phase3-qty-form';
   qForm.innerHTML = `
@@ -361,10 +369,6 @@ function buildDemandOnlyGate(num, phase) {
   document.getElementById('sel-new-qty').addEventListener('change', checkDemandGate);
 
   freshBtn.addEventListener('click', async () => {
-    solveState.eqPrice    = phase.newEqPrice;
-    solveState.eqQty      = phase.newEqQty;
-    solveState.eqPriceOld = phase.oldEqPrice;
-    solveState.eqQtyOld   = phase.oldEqQty;
     await set(ref(db, `pairs/${pairId}/phase${num}/s1Complete`), true);
     buildSolveScreen(num);
   }, { once: true });
@@ -456,44 +460,25 @@ function buildSolveScreen(num) {
       ${buildScheduleTableHTML(num)}
     </div>`;
 
-  // Build ammo header
+  // All 10 ammo circles start empty for every engagement
   const ammoCnt    = 10;
-  const autoAmmo   = (phase.phaseType === 'demand-only') ? 5 : 0;
   const circlesHTML = Array.from({ length: ammoCnt }, (_, i) =>
-    `<div class="ammo-circle${i < autoAmmo ? ' auto' : ''}" id="ammo-${i}"></div>`
+    `<div class="ammo-circle" id="ammo-${i}"></div>`
   ).join('');
 
   const ammoHeader = `
     <div class="ammo-header">
       <div class="ammo-row">${circlesHTML}</div>
-      <div class="ammo-count" id="ammo-count">AMMO: ${autoAmmo} / 10</div>
+      <div class="ammo-count" id="ammo-count">AMMO: 0 / 10</div>
     </div>`;
 
-  if (phase.phaseType === 'demand-only') {
-    // P₁, Q₁, P₂, Q₂, t shown as pre-filled (auto-ammo)
-    // Students enter: t, Tax revenue, NTR, Elasticity, CB total, CB per unit
-    // (t is trivial but still an input for consistency)
-    document.getElementById('solve-form-container').innerHTML =
-      tableBlock +
-      `<div class="info-box">
-        Old equilibrium: P = $${phase.oldEqPrice}, Q = ${phase.oldEqQty}<br>
-        New equilibrium: P = $${phase.newEqPrice}, Q = ${phase.newEqQty}<br>
-        Unit tax: $${phase.tax}
-        <br><small style="color:#64748b">P₁, Q₁, P₂, Q₂, and t verified — 5 ammo pre-loaded</small>
-      </div>` +
-      ammoHeader +
-      buildActiveFields(phase, true) +
-      `<button id="btn-solve-submit" class="btn btn-primary">FIRE (${autoAmmo}/10) →</button>`;
-  } else {
-    document.getElementById('solve-form-container').innerHTML =
-      tableBlock +
-      ammoHeader +
-      buildActiveFields(phase, false) +
-      `<button id="btn-solve-submit" class="btn btn-primary">FIRE (0/10) →</button>`;
-  }
+  document.getElementById('solve-form-container').innerHTML =
+    tableBlock +
+    ammoHeader +
+    buildActiveFields(phase) +
+    `<button id="btn-solve-submit" class="btn btn-primary">FIRE (0/10) →</button>`;
 
-  // Initialise ammo state and attach listeners
-  initAmmoSystem(num, phase.phaseType === 'demand-only');
+  initAmmoSystem(num);
 
   showScreen('screen-solve');
   startTimer('timer-solve', () => {
@@ -503,13 +488,12 @@ function buildSolveScreen(num) {
   });
 }
 
-// Build the 10-field worksheet
-// demand3 = true means P₁/Q₁/P₂/Q₂/t are pre-filled; only 5 active inputs
-function buildActiveFields(phase, demand3) {
+// Build the 10-field worksheet — all engagements use all 10 inputs
+function buildActiveFields(phase) {
   const priceOpts = (phase.eqPriceOptions || []).map(v =>
     `<option value="${v}">$${v}</option>`).join('');
   const qtyOpts   = (phase.eqQtyOptions   || []).map(v =>
-    `<option value="${v}">${v}</option>`).join('');
+    `<option value="${v}">${v} units</option>`).join('');
 
   const elasticityOpts = `
     <option value="">— Select —</option>
@@ -517,71 +501,45 @@ function buildActiveFields(phase, demand3) {
     <option value="unit">Unit Elastic</option>
     <option value="inelastic">Inelastic</option>`;
 
-  if (demand3) {
-    // 5 active inputs (circles 5–9)
-    return `
-      <div class="form-group">
-        <label>⑥ Tax revenue (t × Q₂)</label>
-        <input type="number" id="s2-taxrev" min="0" step="1" placeholder="e.g. ${phase.tax * phase.newEqQty}">
-      </div>
-      <div class="form-group">
-        <label>⑦ New total revenue (P₂ × Q₂)</label>
-        <input type="number" id="s2-ntr" min="0" step="1" placeholder="e.g. ${phase.newEqPrice * phase.newEqQty}">
-      </div>
-      <div class="form-group">
-        <label>⑧ Elasticity of demand</label>
-        <select id="s2-elas">${elasticityOpts}</select>
-      </div>
-      <div class="form-group">
-        <label>⑨ Consumer burden — total (CB × Q₂)</label>
-        <input type="number" id="s2-cbtot" min="0" step="1" placeholder="e.g. ${phase.consumerBurden * phase.newEqQty}">
-      </div>
-      <div class="form-group">
-        <label>⑩ Consumer burden — per unit (P₂ − P₁)</label>
-        <input type="number" id="s2-cbunit" min="0" step="1" placeholder="e.g. ${phase.consumerBurden}">
-      </div>`;
-  }
-
-  // 10 active inputs
   return `
     <div class="form-group">
-      <label>① Old equilibrium price (P₁)</label>
+      <label>① Old equilibrium price — P₁ ($)</label>
       <select id="s2-p1">
         <option value="">— Select —</option>
         ${priceOpts}
       </select>
     </div>
     <div class="form-group">
-      <label>② Old equilibrium quantity (Q₁)</label>
+      <label>② Old equilibrium quantity — Q₁ (units)</label>
       <select id="s2-q1">
         <option value="">— Select —</option>
         ${qtyOpts}
       </select>
     </div>
     <div class="form-group">
-      <label>③ New equilibrium price (P₂)</label>
+      <label>③ New equilibrium price — P₂ ($)</label>
       <select id="s2-p2">
         <option value="">— Select —</option>
         ${priceOpts}
       </select>
     </div>
     <div class="form-group">
-      <label>④ New equilibrium quantity (Q₂)</label>
+      <label>④ New equilibrium quantity — Q₂ (units)</label>
       <select id="s2-q2">
         <option value="">— Select —</option>
         ${qtyOpts}
       </select>
     </div>
     <div class="form-group">
-      <label>⑤ Unit tax (t) — given</label>
-      <input type="number" id="s2-t" min="0" step="1" placeholder="Enter the given tax amount">
+      <label>⑤ Unit tax — t ($)</label>
+      <input type="number" id="s2-t" min="0" step="1">
     </div>
     <div class="form-group">
-      <label>⑥ Tax revenue (t × Q₂)</label>
+      <label>⑥ Tax revenue — t × Q₂ ($)</label>
       <input type="number" id="s2-taxrev" min="0" step="1">
     </div>
     <div class="form-group">
-      <label>⑦ New total revenue (P₂ × Q₂)</label>
+      <label>⑦ New total revenue — P₂ × Q₂ ($)</label>
       <input type="number" id="s2-ntr" min="0" step="1">
     </div>
     <div class="form-group">
@@ -589,50 +547,34 @@ function buildActiveFields(phase, demand3) {
       <select id="s2-elas">${elasticityOpts}</select>
     </div>
     <div class="form-group">
-      <label>⑨ Consumer burden — total (CB × Q₂)</label>
+      <label>⑨ Consumer burden total — CB × Q₂ ($)</label>
       <input type="number" id="s2-cbtot" min="0" step="1">
     </div>
     <div class="form-group">
-      <label>⑩ Consumer burden — per unit (P₂ − P₁)</label>
+      <label>⑩ Consumer burden per unit — P₂ − P₁ ($)</label>
       <input type="number" id="s2-cbunit" min="0" step="1">
     </div>`;
 }
 
 // ── Ammo system ───────────────────────────────────────────────────────────
-// ammoMap: array of { id, expected, circleIdx }
 let ammoMap = [];
 
-function initAmmoSystem(num, demand3) {
+function initAmmoSystem(num) {
   const phase = PHASES[num];
-  ammoMap     = [];
+  ammoMap     = [
+    { id: 's2-p1',     expected: phase.oldEqPrice,                      circleIdx: 0, type: 'select' },
+    { id: 's2-q1',     expected: phase.oldEqQty,                        circleIdx: 1, type: 'select' },
+    { id: 's2-p2',     expected: phase.newEqPrice,                      circleIdx: 2, type: 'select' },
+    { id: 's2-q2',     expected: phase.newEqQty,                        circleIdx: 3, type: 'select' },
+    { id: 's2-t',      expected: phase.tax,                              circleIdx: 4, type: 'number' },
+    { id: 's2-taxrev', expected: phase.tax * phase.newEqQty,            circleIdx: 5, type: 'number' },
+    { id: 's2-ntr',    expected: phase.newEqPrice * phase.newEqQty,     circleIdx: 6, type: 'number' },
+    { id: 's2-elas',   expected: phase.correctElasticity,                circleIdx: 7, type: 'select' },
+    { id: 's2-cbtot',  expected: phase.consumerBurden * phase.newEqQty, circleIdx: 8, type: 'number' },
+    { id: 's2-cbunit', expected: phase.consumerBurden,                   circleIdx: 9, type: 'number' },
+  ];
 
-  if (demand3) {
-    // 5 auto-correct circles (0–4), 5 active (5–9)
-    // Circle indices 5–9 map to fields 6–10
-    ammoMap = [
-      { id: 's2-taxrev', expected: phase.tax * phase.newEqQty,           circleIdx: 5, type: 'number' },
-      { id: 's2-ntr',    expected: phase.newEqPrice * phase.newEqQty,    circleIdx: 6, type: 'number' },
-      { id: 's2-elas',   expected: phase.correctElasticity,               circleIdx: 7, type: 'select' },
-      { id: 's2-cbtot',  expected: phase.consumerBurden * phase.newEqQty,circleIdx: 8, type: 'number' },
-      { id: 's2-cbunit', expected: phase.consumerBurden,                  circleIdx: 9, type: 'number' },
-    ];
-  } else {
-    ammoMap = [
-      { id: 's2-p1',     expected: phase.oldEqPrice,                      circleIdx: 0, type: 'select' },
-      { id: 's2-q1',     expected: phase.oldEqQty,                        circleIdx: 1, type: 'select' },
-      { id: 's2-p2',     expected: phase.newEqPrice,                      circleIdx: 2, type: 'select' },
-      { id: 's2-q2',     expected: phase.newEqQty,                        circleIdx: 3, type: 'select' },
-      { id: 's2-t',      expected: phase.tax,                              circleIdx: 4, type: 'number' },
-      { id: 's2-taxrev', expected: phase.tax * phase.newEqQty,            circleIdx: 5, type: 'number' },
-      { id: 's2-ntr',    expected: phase.newEqPrice * phase.newEqQty,     circleIdx: 6, type: 'number' },
-      { id: 's2-elas',   expected: phase.correctElasticity,                circleIdx: 7, type: 'select' },
-      { id: 's2-cbtot',  expected: phase.consumerBurden * phase.newEqQty, circleIdx: 8, type: 'number' },
-      { id: 's2-cbunit', expected: phase.consumerBurden,                   circleIdx: 9, type: 'number' },
-    ];
-  }
-
-  const autoAmmo = demand3 ? 5 : 0;
-  updateAmmoDisplay(autoAmmo);
+  updateAmmoDisplay(0);
 
   ammoMap.forEach(({ id, type }) => {
     const el = document.getElementById(id);
@@ -645,10 +587,6 @@ function initAmmoSystem(num, demand3) {
 }
 
 function checkAmmo() {
-  const phase   = PHASES[currentPhaseNum];
-  const demand3 = phase.phaseType === 'demand-only';
-  const autoAmmo = demand3 ? 5 : 0;
-
   ammoMap.forEach(({ id, expected, circleIdx, type }) => {
     const el  = document.getElementById(id);
     if (!el) return;
@@ -663,12 +601,11 @@ function checkAmmo() {
     }
   });
 
-  updateAmmoDisplay(autoAmmo);
+  updateAmmoDisplay(0);
 }
 
 function updateAmmoDisplay(autoAmmo) {
-  // Count green circles
-  let green = autoAmmo;   // auto circles are always green
+  let green = autoAmmo;
   ammoMap.forEach(({ id, expected, type }) => {
     const el  = document.getElementById(id);
     if (!el) return;
@@ -686,21 +623,12 @@ function updateAmmoDisplay(autoAmmo) {
 }
 
 function onSolveConfirm() {
-  const phase   = PHASES[currentPhaseNum];
-  const demand3 = phase.phaseType === 'demand-only';
+  const phase = PHASES[currentPhaseNum];
 
-  if (demand3) {
-    // P₁/Q₁/P₂/Q₂ already set from gate
-    solveState.eqPriceOld = phase.oldEqPrice;
-    solveState.eqQtyOld   = phase.oldEqQty;
-    solveState.eqPrice    = phase.newEqPrice;
-    solveState.eqQty      = phase.newEqQty;
-  } else {
-    solveState.eqPriceOld = parseInt(document.getElementById('s2-p1')?.value);
-    solveState.eqQtyOld   = parseInt(document.getElementById('s2-q1')?.value);
-    solveState.eqPrice    = parseInt(document.getElementById('s2-p2')?.value);
-    solveState.eqQty      = parseInt(document.getElementById('s2-q2')?.value);
-  }
+  solveState.eqPriceOld = parseInt(document.getElementById('s2-p1')?.value);
+  solveState.eqQtyOld   = parseInt(document.getElementById('s2-q1')?.value);
+  solveState.eqPrice    = parseInt(document.getElementById('s2-p2')?.value);
+  solveState.eqQty      = parseInt(document.getElementById('s2-q2')?.value);
 
   solveState.taxRevenue  = parseInt(document.getElementById('s2-taxrev')?.value);
   solveState.newTotalRev = parseInt(document.getElementById('s2-ntr')?.value);
@@ -770,7 +698,7 @@ function showLocked(phaseNum) {
 
   let summary = `Engagement ${phaseNum}`;
   if (!isNaN(solveState.eqPrice)) {
-    summary += ` · New Eq: P=$${solveState.eqPrice} Q=${solveState.eqQty}`;
+    summary += ` · New Eq: P=$${solveState.eqPrice} Q=${solveState.eqQty} units`;
   }
   if (!isNaN(cb)) {
     summary += ` · CB $${cb} + PB $${pb} = Tax $${phase.tax}`;

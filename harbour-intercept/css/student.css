@@ -444,6 +444,16 @@ select option { background: #1e293b; }
 
 .btn-raid { padding: 12px; font-size: 0.88rem; }
 
+/* ── EVA Alert — last 15 seconds ─────────────────────────────────────────── */
+@keyframes eva-pulse {
+  0%, 100% { background-color: var(--bg); }
+  50%       { background-color: rgba(220, 38, 38, 0.2); }
+}
+
+body.eva-alert {
+  animation: eva-pulse 1.4s ease-in-out infinite;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 420px) {
   .analyst-cards   { flex-direction: column; }

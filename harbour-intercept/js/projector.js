@@ -7,9 +7,10 @@ let currentPhase        = 'standby';
 let revealActive        = false;
 let revealAnimationDone = false;
 let pairsData           = {};
+let revealedPhases      = {};   // tracks which phases have been revealed
 
-// HP = ceil(registeredPairs × 30 × 0.6) — updates live as pairs join.
-// Damage per pair per engagement = stage2Score (0–10), only if targetCorrect.
+const STAGE_DURATION = (2 * 60 + 30) * 1000;   // 2 minutes 30 seconds
+let projectorBlinkInterval = null;
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -41,14 +42,27 @@ function setupTeacherPanel() {
 function setPhase(phase) {
   set(ref(db, 'game/currentPhase'),    phase);
   set(ref(db, 'game/revealTriggered'), false);
+  if (phase !== 'standby') {
+    set(ref(db, 'game/stageStartedAt'), Date.now());
+  } else {
+    stopProjectorBlink();
+  }
 }
 
 function triggerReveal() {
+  // Mark current phase as revealed (so HP updates only now)
+  if (currentPhase.startsWith('phase')) {
+    revealedPhases[currentPhase] = true;
+    set(ref(db, `game/revealedPhases/${currentPhase}`), true);
+  }
   set(ref(db, 'game/revealTriggered'), true);
+  stopProjectorBlink();
 }
 
 async function resetGame() {
   if (!confirm('Reset ALL game data? This cannot be undone.')) return;
+  revealedPhases = {};
+  stopProjectorBlink();
   await set(ref(db, 'game'), { currentPhase: 'standby', revealTriggered: false, resetAt: Date.now() });
   await remove(ref(db, 'pairs'));
   pairsData           = {};
@@ -66,9 +80,13 @@ async function resetGame() {
 // ── Game state subscription ───────────────────────────────────────────────
 function subscribeGame() {
   onValue(ref(db, 'game'), snapshot => {
-    const game     = snapshot.val() || {};
-    const phase    = game.currentPhase    || 'standby';
-    const revealed = game.revealTriggered || false;
+    const game         = snapshot.val() || {};
+    const phase        = game.currentPhase    || 'standby';
+    const revealed     = game.revealTriggered || false;
+    const stageStartAt = game.stageStartedAt  || null;
+
+    // Sync revealed phases from Firebase (persists across page reloads)
+    revealedPhases = game.revealedPhases || {};
 
     currentPhase = phase;
 
@@ -83,6 +101,13 @@ function subscribeGame() {
 
     updatePhaseDisplay(phase);
     updateSubmissionCounter();
+
+    // Drive the projector EVA blink from phase start time
+    if (phase !== 'standby' && !revealed && stageStartAt) {
+      startProjectorBlinkTimer(stageStartAt);
+    } else {
+      stopProjectorBlink();
+    }
 
     if (revealed && !revealAnimationDone) {
       showRevealResults();
@@ -139,6 +164,8 @@ function computeHP() {
   let damage = 0;
   Object.values(pairsData).forEach(pair => {
     [1, 2, 3].forEach(n => {
+      // Only count damage from phases that have been revealed
+      if (!revealedPhases[`phase${n}`]) return;
       const p = pair[`phase${n}`];
       if (p?.targetCorrect === true) {
         damage += (p.stage2Score ?? 0);
@@ -239,4 +266,30 @@ function checkEndGame() {
       `Angel survives with ${hp} HP. More pairs need to intercept correctly next time.`;
     overlay.classList.add('defeat');
   }
+}
+
+// ── Projector EVA blink timer ─────────────────────────────────────────────
+function startProjectorBlinkTimer(stageStartedAt) {
+  stopProjectorBlink();
+  const endTime = stageStartedAt + STAGE_DURATION;
+
+  projectorBlinkInterval = setInterval(() => {
+    const remaining = endTime - Date.now();
+    if (remaining > 0 && remaining <= 15000) {
+      document.body.classList.add('eva-alert');
+    } else {
+      document.body.classList.remove('eva-alert');
+    }
+    if (remaining <= 0) {
+      stopProjectorBlink();
+    }
+  }, 500);
+}
+
+function stopProjectorBlink() {
+  if (projectorBlinkInterval) {
+    clearInterval(projectorBlinkInterval);
+    projectorBlinkInterval = null;
+  }
+  document.body.classList.remove('eva-alert');
 }

@@ -115,6 +115,7 @@ export const PHASES = {
     producerBurden:  3,
     correctTarget:   'body',      // Ed > Es → Body Armour (装甲部)
     correctElasticity: 'elastic',
+    eqPriceOptions:  [11, 12, 13, 14, 15],
     eqQtyOptions:    [80, 90, 100, 110, 120, 130, 140, 150, 160],
   },
 };
