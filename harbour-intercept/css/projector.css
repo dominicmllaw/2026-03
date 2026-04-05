@@ -300,3 +300,41 @@ body.eva-alert {
 .btn-phase3 { border-color: #7c3aed; }
 .btn-reveal { border-color: var(--success); color: #4ade80; }
 .btn-reset  { border-color: var(--danger);  color: #f87171; }
+
+/* ── Ammo summary table ──────────────────────────────────────────────────── */
+#ammo-summary { padding-top: 6px; }
+#ammo-summary.hidden { display: none; }
+
+#ammo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 6px;
+}
+
+#ammo-table th {
+  text-align: left;
+  padding: 5px 12px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #334155;
+}
+
+#ammo-table td {
+  padding: 5px 12px;
+  border-bottom: 1px solid #1e293b;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+#ammo-table td:first-child {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.ammo-hit  { color: #4ade80; }
+.ammo-miss { color: #f87171; }

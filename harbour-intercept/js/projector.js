@@ -75,6 +75,10 @@ async function resetGame() {
   eg.classList.add('hidden');
   eg.classList.remove('victory', 'defeat');
   document.getElementById('submission-counter').textContent = '';
+  const ammoSection = document.getElementById('ammo-summary');
+  if (ammoSection) { ammoSection.classList.add('hidden'); }
+  const ammoTbody = document.getElementById('ammo-tbody');
+  if (ammoTbody) { ammoTbody.innerHTML = ''; }
 }
 
 // ── Game state subscription ───────────────────────────────────────────────
@@ -193,6 +197,7 @@ function showRevealResults() {
 
   updateResultDisplay();
   updateHPBar();
+  updateAmmoTable();
 
   if (!result.majorityCorrect) {
     bossRetaliate();
@@ -207,6 +212,7 @@ function updateResultDisplay() {
   const result = computeResult();
   if (!result) return;
 
+  updateAmmoTable();
   document.getElementById('reveal-results').classList.remove('hidden');
 
   document.getElementById('result-a').innerHTML =
@@ -266,6 +272,39 @@ function checkEndGame() {
       `Angel survives with ${hp} HP. More pairs need to intercept correctly next time.`;
     overlay.classList.add('defeat');
   }
+}
+
+// ── Ammo summary table ────────────────────────────────────────────────────
+function updateAmmoTable() {
+  const section = document.getElementById('ammo-summary');
+  const tbody   = document.getElementById('ammo-tbody');
+  if (!section || !tbody) return;
+
+  const revealed = [1, 2, 3].filter(n => revealedPhases[`phase${n}`]);
+  if (revealed.length === 0) { section.classList.add('hidden'); return; }
+
+  section.classList.remove('hidden');
+  tbody.innerHTML = '';
+
+  revealed.forEach(n => {
+    let total = 0, hit = 0, missed = 0;
+    Object.values(pairsData).forEach(pair => {
+      const p     = pair[`phase${n}`];
+      if (!p) return;
+      const score = p.stage2Score ?? 0;
+      total += score;
+      if (p.targetCorrect) hit    += score;
+      else                  missed += score;
+    });
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>ENG. ${n}</td>
+      <td>${total}</td>
+      <td class="ammo-hit">${hit}</td>
+      <td class="ammo-miss">${missed}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 // ── Projector EVA blink timer ─────────────────────────────────────────────
