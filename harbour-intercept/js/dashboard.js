@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function targetLabel(target) {
+  return target === 'core' ? 'Core Unit' :
+         target === 'body' ? 'Body Armour' :
+         target === 'rear' ? 'Rear Section' : '—';
+}
+
 // ── Phase 1 & 2 tables ────────────────────────────────────────────────────
 function renderPhase12Table(phaseNum, pairs) {
   const tbody     = document.getElementById(`phase${phaseNum}-tbody`);
@@ -31,7 +37,7 @@ function renderPhase12Table(phaseNum, pairs) {
     return;
   }
 
-  let submitted = 0, consumers = 0, producers = 0;
+  let submitted = 0, core = 0, body = 0, rear = 0;
 
   sorted.forEach(([pairId, pairData]) => {
     const pd  = pairData[`phase${phaseNum}`] || {};
@@ -41,18 +47,17 @@ function renderPhase12Table(phaseNum, pairs) {
 
     if (pd.submitted) {
       submitted++;
-      if (pd.target === 'consumer') consumers++;
-      if (pd.target === 'producer') producers++;
+      if (pd.target === 'core') core++;
+      if (pd.target === 'body') body++;
+      if (pd.target === 'rear') rear++;
     }
-
-    const targetLabel =
-      pd.target === 'consumer' ? 'Consumer Shield' :
-      pd.target === 'producer' ? 'Producer Armour' : '—';
 
     const isCorrect  = pd.submitted && pd.target === phase.correctTarget;
     const correctTd  = pd.submitted
       ? `<td class="${isCorrect ? 'cell-correct' : 'cell-wrong'}">${isCorrect ? 'Yes' : 'No'}</td>`
       : '<td class="cell-pending">—</td>';
+
+    const score = pd.stage2Score != null ? pd.stage2Score : '—';
 
     const tr = document.createElement('tr');
     if (!pd.submitted) tr.classList.add('row-pending');
@@ -64,7 +69,8 @@ function renderPhase12Table(phaseNum, pairs) {
       <td>${pd.eqPrice  != null ? '$' + pd.eqPrice  : '—'}</td>
       <td>${pd.eqQty    != null ? pd.eqQty           : '—'}</td>
       <td>${pd.consumerBurden != null ? '$' + pd.consumerBurden : '—'}</td>
-      <td>${targetLabel}</td>
+      <td>${score !== '—' ? score + '/10' : '—'}</td>
+      <td>${targetLabel(pd.target)}</td>
       ${correctTd}
     `;
     tbody.appendChild(tr);
@@ -72,7 +78,7 @@ function renderPhase12Table(phaseNum, pairs) {
 
   summaryEl.textContent =
     `${submitted} / ${sorted.length} submitted · ` +
-    `Consumer Shield: ${consumers} · Producer Armour: ${producers}`;
+    `Core Unit: ${core} · Body Armour: ${body} · Rear Section: ${rear}`;
 }
 
 // ── Phase 3 table ─────────────────────────────────────────────────────────
@@ -87,7 +93,7 @@ function renderPhase3Table(pairs) {
     return;
   }
 
-  let submitted = 0, consumers = 0, producers = 0;
+  let submitted = 0, core = 0, body = 0, rear = 0;
 
   sorted.forEach(([pairId, pairData]) => {
     const pd  = pairData.phase3 || {};
@@ -97,18 +103,17 @@ function renderPhase3Table(pairs) {
 
     if (pd.submitted) {
       submitted++;
-      if (pd.target === 'consumer') consumers++;
-      if (pd.target === 'producer') producers++;
+      if (pd.target === 'core') core++;
+      if (pd.target === 'body') body++;
+      if (pd.target === 'rear') rear++;
     }
-
-    const targetLabel =
-      pd.target === 'consumer' ? 'Consumer Shield' :
-      pd.target === 'producer' ? 'Producer Armour' : '—';
 
     const isCorrect = pd.submitted && pd.target === PHASES[3].correctTarget;
     const correctTd = pd.submitted
       ? `<td class="${isCorrect ? 'cell-correct' : 'cell-wrong'}">${isCorrect ? 'Yes' : 'No'}</td>`
       : '<td class="cell-pending">—</td>';
+
+    const score = pd.stage2Score != null ? pd.stage2Score : '—';
 
     const tr = document.createElement('tr');
     if (!pd.submitted) tr.classList.add('row-pending');
@@ -116,7 +121,8 @@ function renderPhase3Table(pairs) {
     tr.innerHTML = `
       <td>${num}</td>
       <td>${n1}${n2}</td>
-      <td>${targetLabel}</td>
+      <td>${score !== '—' ? score + '/10' : '—'}</td>
+      <td>${targetLabel(pd.target)}</td>
       ${correctTd}
     `;
     tbody.appendChild(tr);
@@ -124,5 +130,5 @@ function renderPhase3Table(pairs) {
 
   summaryEl.textContent =
     `${submitted} / ${sorted.length} submitted · ` +
-    `Consumer Shield: ${consumers} · Producer Armour: ${producers}`;
+    `Core Unit: ${core} · Body Armour: ${body} · Rear Section: ${rear}`;
 }

@@ -1,12 +1,8 @@
 // HARBOUR INTERCEPT — Round Data
 // ─────────────────────────────────────────────────────────────────────────────
-// Phase 1 source: HKDSE 2019 Paper 1 Q14 (2019-14) — imported soybeans tariff
-//   Demand given in question. Supply derived from equilibria: Qs = 200P − 1600.
-//   Old eq P=$11, Q=600. After $3 tariff: new eq P_c=$13, Q=400. CB=$2, PB=$1.
-//
-// Phase 2 source: HKDSE 2003 Paper 1 Q11 (2003-11) — Good X, $3/unit tax
-//   Supply derived from equilibria: Qs = 10P + 20. Old eq P=$12, Q=140.
-//   After $3 tax: new eq P_c=$13, Q=120. CB=$1, PB=$2.
+// Engagement 1 — Object X, $2/unit tax. Ed = Es → equal burden → Core Unit.
+// Engagement 2 — Target Y, $3/unit tax. Ed < Es → CB > PB → Rear Section.
+// Engagement 3 — Threat Z, $5/unit tax. Ed > Es → PB > CB → Body Armour.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const STUDENTS = [
@@ -45,74 +41,80 @@ export const STUDENTS = [
 
 export const PHASES = {
   1: {
-    label:    'Round A — Inelastic Demand',
-    // 2019 DSE Q14: $3/unit tariff on imported soybeans. Demand elastic < supply.
-    // Supply column derived: Qs = 200P − 1600 (verified at old and new equilibria).
-    taxLabel: '$3 per unit tariff on imported soybeans',
-    tax: 3,
+    // Engagement 1 — Object X: $2/unit tax. Equal burden (Ed = Es) → Core Unit.
+    // P=1–5, Qd=50↓10, Qs=10↑50. Old eq P=$3 Q=30. New eq P=$4 Q=20.
+    // CB = $4−$3 = $1. PB = $2−$1 = $1. Equal → Core Unit (中枢部).
+    label:    'Engagement 1 — Object X',
+    taxLabel: '$2 per unit tax on Object X',
+    tax: 2,
     schedule: [
-      { price: 10, qd:  700, qs:   400 },  // Row 0 — pre-filled (new price = $13)
-      { price: 11, qd:  600, qs:   600 },  // ← old equilibrium
-      { price: 12, qd:  500, qs:   800 },
-      { price: 13, qd:  400, qs:  1000 },
-      { price: 14, qd:  300, qs:  1200 },
+      { price: 1, qd: 50, qs: 10 },
+      { price: 2, qd: 40, qs: 20 },
+      { price: 3, qd: 30, qs: 30 },  // ← old equilibrium
+      { price: 4, qd: 20, qs: 40 },  // ← new equilibrium (Qd = new Qs(S2))
+      { price: 5, qd: 10, qs: 50 },
     ],
-    oldEqPrice: 11,
-    oldEqQty:   600,
-    newEqPrice: 13,   // CB = 13 − 11 = 2
-    newEqQty:   400,
-    consumerBurden: 2,
-    producerBurden: 1,
-    correctTarget: 'consumer',  // Consumer Shield
-    eqPriceOptions: [10, 11, 12, 13, 14, 15, 16, 17],
-    eqQtyOptions:   [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200],
+    oldEqPrice: 3,
+    oldEqQty:   30,
+    newEqPrice: 4,   // CB = 4 − 3 = 1
+    newEqQty:   20,
+    consumerBurden:  1,
+    producerBurden:  1,
+    correctTarget:   'core',       // Ed = Es → Core Unit (中枢部)
+    correctElasticity: 'unit',
+    eqPriceOptions:  [1, 2, 3, 4, 5, 6, 7],
+    eqQtyOptions:    [10, 15, 20, 25, 30, 35, 40, 45, 50],
   },
+
   2: {
-    label:    'Round B — Elastic Demand',
-    // 2003 DSE Q11: $3/unit tax on Good X. Supply derived from equilibria (Qs = 10P + 20).
-    // Old eq P=$12, Q=140. After $3 tax: new eq P_c=$13, Q=120. CB=$1, PB=$2.
-    // Same tax ($3) and price range (P=10–14) as Phase 1 — only elasticity differs.
-    taxLabel: '$3 per unit tax on producers',
+    // Engagement 2 — Target Y: $3/unit tax. CB > PB (Ed < Es) → Rear Section.
+    // Prices descending P=6→2. Old eq P=$3 Q=30. New eq P=$5 Q=20.
+    // CB = $5−$3 = $2. PB = $3−$2 = $1. Consumer bears more → Rear Section (後部区画).
+    label:    'Engagement 2 — Target Y',
+    taxLabel: '$3 per unit tax on Target Y',
     tax: 3,
     schedule: [
-      { price: 10, qd: 180, qs: 120 },
-      { price: 11, qd: 160, qs: 130 },
-      { price: 12, qd: 140, qs: 140 },  // ← old equilibrium
-      { price: 13, qd: 120, qs: 150 },
-      { price: 14, qd: 100, qs: 160 },
+      { price: 6, qd: 10, qs: 60 },
+      { price: 5, qd: 20, qs: 50 },  // ← new equilibrium
+      { price: 4, qd: 25, qs: 40 },
+      { price: 3, qd: 30, qs: 30 },  // ← old equilibrium
+      { price: 2, qd: 50, qs: 20 },
+    ],
+    oldEqPrice: 3,
+    oldEqQty:   30,
+    newEqPrice: 5,    // CB = 5 − 3 = 2; PB = 3 − 2 = 1
+    newEqQty:   20,
+    consumerBurden:  2,
+    producerBurden:  1,
+    correctTarget:   'rear',      // Ed < Es → Rear Section (後部区画)
+    correctElasticity: 'inelastic',
+    eqPriceOptions:  [2, 3, 4, 5, 6, 7, 8],
+    eqQtyOptions:    [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60],
+  },
+
+  3: {
+    // Engagement 3 — Threat Z: $5/unit tax. Demand-only schedule.
+    // Old eq P=$12 Q=140 (given). New eq P=$14 Q=100.
+    // CB = $14−$12 = $2. PB = $5−$2 = $3. Producer bears more → Body Armour (装甲部).
+    label:    'Engagement 3 — Threat Z',
+    taxLabel: '$5 per unit tax on Threat Z',
+    tax: 5,
+    phaseType: 'demand-only',
+    schedule: [
+      { price: 11, qd: 160 },
+      { price: 12, qd: 140 },  // ← old equilibrium
+      { price: 13, qd: 120 },
+      { price: 14, qd: 100 },  // ← new equilibrium
+      { price: 15, qd: 80  },
     ],
     oldEqPrice: 12,
     oldEqQty:   140,
-    newEqPrice: 13,   // CB = 13 − 12 = 1; PB = 3 − 1 = 2
-    newEqQty:   120,
-    consumerBurden: 1,
-    producerBurden: 2,
-    correctTarget: 'producer',  // Producer Armour
-    eqPriceOptions: [10, 11, 12, 13, 14, 15, 16, 17],
-    eqQtyOptions:   [100, 110, 120, 130, 140, 150, 160, 170, 180],
-  },
-  3: {
-    label:    'Final Intercept — PED = 0',
-    // Constructed scenario: perfectly inelastic demand (Qd constant at 60).
-    // Students discover that ALL burden falls on consumers when PED = 0.
-    // Old eq P=$14, Q=60. After $3 tax: new eq P_c=$17, Q=60. CB=$3, PB=$0.
-    taxLabel: '$3 per unit tax on producers',
-    tax: 3,
-    schedule: [
-      { price: 13, qd: 60, qs: 50 },
-      { price: 14, qd: 60, qs: 60 },  // ← old equilibrium
-      { price: 15, qd: 60, qs: 70 },
-      { price: 16, qd: 60, qs: 80 },
-      { price: 17, qd: 60, qs: 90 },
-    ],
-    oldEqPrice: 14,
-    oldEqQty:   60,
-    newEqPrice: 17,   // CB = 17 − 14 = 3 = full tax; PB = 0
-    newEqQty:   60,
-    consumerBurden: 3,
-    producerBurden: 0,
-    correctTarget: 'consumer',  // Consumer Shield — ALL burden on consumers
-    eqPriceOptions: [13, 14, 15, 16, 17, 18, 19, 20],
-    eqQtyOptions:   [50, 55, 60, 65, 70, 75, 80, 85, 90],
+    newEqPrice: 14,   // CB = 14 − 12 = 2; PB = 5 − 2 = 3
+    newEqQty:   100,
+    consumerBurden:  2,
+    producerBurden:  3,
+    correctTarget:   'body',      // Ed > Es → Body Armour (装甲部)
+    correctElasticity: 'elastic',
+    eqQtyOptions:    [80, 90, 100, 110, 120, 130, 140, 150, 160],
   },
 };

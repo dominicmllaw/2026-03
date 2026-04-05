@@ -126,6 +126,9 @@ select option { background: #1e293b; }
 .btn-primary  { background: var(--consumer); color: #fff; }
 .btn-consumer { background: var(--consumer); color: #fff; }
 .btn-producer { background: var(--producer); color: #fff; }
+.btn-core     { background: var(--success);  color: #fff; }
+.btn-body     { background: var(--producer); color: #fff; }
+.btn-rear     { background: var(--consumer); color: #fff; }
 
 /* ── Screen header ───────────────────────────────────────────────────────── */
 .screen-header {
@@ -253,6 +256,17 @@ select option { background: #1e293b; }
 .field-wrong { border-color: var(--danger) !important; }
 
 /* ── Solve screen ────────────────────────────────────────────────────────── */
+.info-box {
+  background: var(--input-bg);
+  border-left: 3px solid #7c3aed;
+  border-radius: 4px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
 .hint-text {
   font-size: 0.78rem;
   color: var(--text-muted);
@@ -280,6 +294,60 @@ select option { background: #1e293b; }
   border: 1px solid rgba(220, 38, 38, 0.4);
 }
 
+/* ── Timer bar ───────────────────────────────────────────────────────────── */
+.timer-bar-track {
+  height: 4px;
+  background: #1e293b;
+  border-radius: 2px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.timer-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--consumer);
+  border-radius: 2px;
+  transition: width 0.5s linear, background-color 0.3s;
+}
+.timer-bar-fill.warning { background: var(--producer); }
+.timer-bar-fill.danger  { background: var(--danger); }
+
+/* ── Ammo system ─────────────────────────────────────────────────────────── */
+.ammo-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.ammo-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.ammo-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #334155;
+  border: 1px solid #475569;
+  flex-shrink: 0;
+}
+.ammo-circle.correct { background: var(--success); border-color: var(--success); }
+.ammo-circle.wrong   { background: var(--danger);  border-color: var(--danger); }
+.ammo-circle.auto    { background: var(--success); border-color: var(--success); opacity: 0.6; }
+
+.ammo-count {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 /* ── Target screen ───────────────────────────────────────────────────────── */
 .target-prompt {
   font-size: 0.95rem;
@@ -290,12 +358,12 @@ select option { background: #1e293b; }
 
 .target-buttons {
   display: flex;
-  gap: 14px;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .btn-target {
-  flex: 1;
-  padding: 36px 12px;
+  padding: 20px 12px;
   font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -304,8 +372,9 @@ select option { background: #1e293b; }
   border: 2px solid transparent;
 }
 
-#btn-consumer.btn-target { border-color: #3b82f6; }
-#btn-producer.btn-target { border-color: #f59e0b; }
+#btn-core.btn-target  { border-color: #22c55e; }
+#btn-body.btn-target  { border-color: #f59e0b; }
+#btn-rear.btn-target  { border-color: #3b82f6; }
 
 /* ── Locked screen ───────────────────────────────────────────────────────── */
 .lock-icon {
@@ -377,7 +446,6 @@ select option { background: #1e293b; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 420px) {
-  .target-buttons  { flex-direction: column; }
   .analyst-cards   { flex-direction: column; }
   .card            { padding: 18px; }
 }

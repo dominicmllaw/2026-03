@@ -54,13 +54,14 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       S1 GATE — SUPPLY SHIFT
+       S1 GATE — WEAPON ACTIVATION
   ════════════════════════════════════════════════════════════════════════ -->
   <div id="screen-s1gate" class="screen">
     <div class="card">
+      <div class="timer-bar-track"><div class="timer-bar-fill" id="timer-s1"></div></div>
       <div class="screen-header">
-        <span id="s1-phase-badge" class="phase-badge">PHASE</span>
-        <span class="step-label">STEP 1 — SUPPLY SHIFT</span>
+        <span id="s1-phase-badge" class="phase-badge">ENG.</span>
+        <span class="step-label">STAGE 1 — WEAPON ACTIVATION (兵装起動)</span>
       </div>
       <p id="s1-instruction" class="instruction"></p>
       <div class="table-scroll">
@@ -81,34 +82,39 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       SOLVE — FIND EQUILIBRIUM
+       SOLVE — PAYLOAD LOADING
   ════════════════════════════════════════════════════════════════════════ -->
   <div id="screen-solve" class="screen">
     <div class="card">
+      <div class="timer-bar-track"><div class="timer-bar-fill" id="timer-solve"></div></div>
       <div class="screen-header">
-        <span id="solve-phase-badge" class="phase-badge">PHASE</span>
-        <span class="step-label">STEP 2 — FIND EQUILIBRIUM</span>
+        <span id="solve-phase-badge" class="phase-badge">ENG.</span>
+        <span class="step-label">STAGE 2 — PAYLOAD LOADING (弾頭装填)</span>
       </div>
       <div id="solve-form-container"></div>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       TARGET — CHOOSE YOUR TARGET
+       TARGET — TARGET SELECTION
   ════════════════════════════════════════════════════════════════════════ -->
   <div id="screen-target" class="screen">
     <div class="card">
+      <div class="timer-bar-track"><div class="timer-bar-fill" id="timer-target"></div></div>
       <div class="screen-header">
-        <span id="target-phase-badge" class="phase-badge">PHASE</span>
-        <span class="step-label">STEP 3 — TARGET</span>
+        <span id="target-phase-badge" class="phase-badge">ENG.</span>
+        <span class="step-label">STAGE 3 — TARGET SELECTION (目標選定)</span>
       </div>
-      <p class="target-prompt">Who bears the greater burden of this tax?</p>
+      <p class="target-prompt">Identify the target section:</p>
       <div class="target-buttons">
-        <button id="btn-consumer" class="btn btn-consumer btn-target">
-          CONSUMER<br>SHIELD
+        <button id="btn-core" class="btn btn-core btn-target">
+          CORE UNIT<br>中枢部<br><small>Ed = Es</small>
         </button>
-        <button id="btn-producer" class="btn btn-producer btn-target">
-          PRODUCER<br>ARMOUR
+        <button id="btn-body" class="btn btn-body btn-target">
+          BODY ARMOUR<br>装甲部<br><small>Ed &gt; Es</small>
+        </button>
+        <button id="btn-rear" class="btn btn-rear btn-target">
+          REAR SECTION<br>後部区画<br><small>Ed &lt; Es</small>
         </button>
       </div>
     </div>
