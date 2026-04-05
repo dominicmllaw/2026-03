@@ -202,8 +202,9 @@ html, body {
   min-width: 220px;
 }
 
-.result-bar-a { background: rgba(37, 99, 235, 0.2); border: 2px solid var(--consumer); }
+.result-bar-a { background: rgba(22, 163, 74,  0.2); border: 2px solid #22c55e; }
 .result-bar-b { background: rgba(217, 119, 6,  0.2); border: 2px solid var(--producer); }
+.result-bar-c { background: rgba(37, 99, 235,  0.2); border: 2px solid var(--consumer); }
 
 .result-label {
   font-size: 0.85rem;

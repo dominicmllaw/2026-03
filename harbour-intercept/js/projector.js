@@ -8,7 +8,8 @@ let revealActive        = false;
 let revealAnimationDone = false;
 let pairsData           = {};
 
-// HP = ceil(registeredPairs × 3 × 0.6) — updates live as pairs join.
+// HP = ceil(registeredPairs × 30 × 0.6) — updates live as pairs join.
+// Damage per pair per engagement = stage2Score (0–10), only if targetCorrect.
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -92,10 +93,10 @@ function subscribeGame() {
 function updatePhaseDisplay(phase) {
   const el = document.getElementById('phase-indicator');
   const labels = {
-    standby: 'STANDBY — PREPARING TO LAUNCH',
-    phase1:  'PHASE 1 — ROUND A: SOYBEANS',
-    phase2:  'PHASE 2 — ROUND B: GOOD Y',
-    phase3:  'PHASE 3 — FINAL INTERCEPT: GOOD Z',
+    standby: 'STANDBY — HOLDING PATTERN',
+    phase1:  'ENGAGEMENT 1 — OBJECT X',
+    phase2:  'ENGAGEMENT 2 — TARGET Y',
+    phase3:  'ENGAGEMENT 3 — THREAT Z',
   };
   el.textContent = labels[phase] || phase.toUpperCase();
   el.className   = `phase-${phase}`;
@@ -130,18 +131,21 @@ function updateSubmissionCounter() {
 // ── HP Bar ────────────────────────────────────────────────────────────────
 function getBossMaxHP() {
   const n = Object.keys(pairsData).length;
-  return n > 0 ? Math.ceil(n * 3 * 0.6) : 0;
+  return n > 0 ? Math.ceil(n * 30 * 0.6) : 0;
 }
 
 function computeHP() {
   const maxHP = getBossMaxHP();
-  let correct = 0;
+  let damage = 0;
   Object.values(pairsData).forEach(pair => {
-    if (pair.phase1?.targetCorrect === true) correct++;
-    if (pair.phase2?.targetCorrect === true) correct++;
-    if (pair.phase3?.targetCorrect === true) correct++;
+    [1, 2, 3].forEach(n => {
+      const p = pair[`phase${n}`];
+      if (p?.targetCorrect === true) {
+        damage += (p.stage2Score ?? 0);
+      }
+    });
   });
-  return Math.max(0, maxHP - correct);
+  return Math.max(0, maxHP - damage);
 }
 
 function updateHPBar() {
@@ -161,7 +165,7 @@ function showRevealResults() {
   if (!result) return;
 
   updateResultDisplay();
-  updateHPBar();   // animate HP bar dropping on correct reveals
+  updateHPBar();
 
   if (!result.majorityCorrect) {
     bossRetaliate();
@@ -177,31 +181,36 @@ function updateResultDisplay() {
   if (!result) return;
 
   document.getElementById('reveal-results').classList.remove('hidden');
+
   document.getElementById('result-a').innerHTML =
-    `<span class="result-label">${result.labelA}</span>` +
-    `<span class="result-number">${result.countA}</span>`;
+    `<span class="result-label">CORE UNIT 中枢部</span>` +
+    `<span class="result-number">${result.countCore}</span>`;
   document.getElementById('result-b').innerHTML =
-    `<span class="result-label">${result.labelB}</span>` +
-    `<span class="result-number">${result.countB}</span>`;
+    `<span class="result-label">BODY ARMOUR 装甲部</span>` +
+    `<span class="result-number">${result.countBody}</span>`;
+  document.getElementById('result-c').innerHTML =
+    `<span class="result-label">REAR SECTION 後部区画</span>` +
+    `<span class="result-number">${result.countRear}</span>`;
 }
 
 function computeResult() {
   if (!currentPhase.startsWith('phase')) return null;
 
-  const num    = parseInt(currentPhase.slice(-1));
-  const phase  = PHASES[num];
-  const all    = Object.values(pairsData);
-  const countA = all.filter(p => p[currentPhase]?.target === 'consumer').length;
-  const countB = all.filter(p => p[currentPhase]?.target === 'producer').length;
-  const correct = phase.correctTarget;
+  const num       = parseInt(currentPhase.slice(-1));
+  const phase     = PHASES[num];
+  const all       = Object.values(pairsData);
+  const countCore = all.filter(p => p[currentPhase]?.target === 'core').length;
+  const countBody = all.filter(p => p[currentPhase]?.target === 'body').length;
+  const countRear = all.filter(p => p[currentPhase]?.target === 'rear').length;
+  const correct   = phase.correctTarget;
+  const correctCount =
+    correct === 'core' ? countCore :
+    correct === 'body' ? countBody : countRear;
+  const total = countCore + countBody + countRear;
 
   return {
-    countA, countB,
-    labelA: 'CONSUMER SHIELD',
-    labelB: 'PRODUCER ARMOUR',
-    majorityCorrect:
-      (correct === 'consumer' && countA >= countB) ||
-      (correct === 'producer' && countB >= countA),
+    countCore, countBody, countRear,
+    majorityCorrect: total > 0 && correctCount >= total / 2,
   };
 }
 
@@ -209,25 +218,25 @@ function computeResult() {
 function bossRetaliate() {
   const overlay = document.getElementById('retaliation-overlay');
   overlay.classList.remove('active');
-  void overlay.offsetWidth;   // force reflow so animation restarts
+  void overlay.offsetWidth;
   overlay.classList.add('active');
 }
 
-// ── End game (shown after Phase 3 reveal) ─────────────────────────────────
+// ── End game (shown after Engagement 3 reveal) ────────────────────────────
 function checkEndGame() {
   const hp      = computeHP();
   const overlay = document.getElementById('endgame-overlay');
   overlay.classList.remove('hidden', 'victory', 'defeat');
 
   if (hp <= 0) {
-    document.getElementById('endgame-title').textContent    = 'HARBOUR SECURED';
+    document.getElementById('endgame-title').textContent    = 'ANGEL NEUTRALISED';
     document.getElementById('endgame-subtitle').textContent =
-      'The class exposed the tax burden. Mission complete.';
+      'The unit successfully identified tax incidence. Mission complete.';
     overlay.classList.add('victory');
   } else {
-    document.getElementById('endgame-title').textContent    = 'HARBOUR LOST';
+    document.getElementById('endgame-title').textContent    = 'CONTAINMENT BREACH';
     document.getElementById('endgame-subtitle').textContent =
-      `Boss survives with ${hp} HP. More pairs need to intercept correctly next time.`;
+      `Angel survives with ${hp} HP. More pairs need to intercept correctly next time.`;
     overlay.classList.add('defeat');
   }
 }

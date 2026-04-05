@@ -13,11 +13,53 @@ const s1State = {
 };
 
 const solveState = {
-  eqPrice: null,
-  eqQty:   null,
-  cb:      null,
-  pb:      null,
+  eqPrice:        null,
+  eqQty:          null,
+  eqPriceOld:     null,
+  eqQtyOld:       null,
+  cb:             null,
+  pb:             null,
+  taxRevenue:     null,
+  newTotalRev:    null,
+  elasticity:     null,
+  totalCB:        null,
+  stage2Score:    0,
 };
+
+// ── Stage timer ───────────────────────────────────────────────────────────
+const STAGE_DURATION = 2 * 60 * 1000;   // 2 minutes
+let timerInterval = null;
+
+function startTimer(fillId, onExpiry) {
+  stopTimer();
+  const fill    = document.getElementById(fillId);
+  if (!fill) return;
+  const endTime = Date.now() + STAGE_DURATION;
+
+  fill.style.transition = 'none';
+  fill.style.width      = '100%';
+  fill.className        = 'timer-bar-fill';
+
+  timerInterval = setInterval(() => {
+    const remaining = endTime - Date.now();
+    const pct       = Math.max(0, remaining / STAGE_DURATION * 100);
+
+    fill.style.transition = 'width 0.5s linear';
+    fill.style.width      = pct + '%';
+    fill.className        = 'timer-bar-fill' +
+      (pct < 20 ? ' danger' : pct < 45 ? ' warning' : '');
+
+    if (remaining <= 0) {
+      stopTimer();
+      fill.style.width = '0%';
+      onExpiry();
+    }
+  }, 500);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -37,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function showScreen(id) {
+  stopTimer();
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
@@ -118,7 +161,6 @@ function subscribeGame() {
     const stored  = parseInt(localStorage.getItem('game_resetAt') || '0');
 
     if (resetAt !== stored) {
-      // Teacher pressed RESET — clear registration and return to pair select
       localStorage.removeItem('pairId');
       localStorage.removeItem('name1');
       localStorage.removeItem('name2');
@@ -153,25 +195,36 @@ async function handleGameChange(phase) {
 
 // ── Phase start ───────────────────────────────────────────────────────────
 function startPhase(num) {
-  currentPhaseNum    = num;
+  currentPhaseNum = num;
   s1State.attempts   = {};
-  s1State.correct    = {};   // all rows require student input
-  solveState.eqPrice = null;
-  solveState.eqQty   = null;
-  solveState.cb      = null;
-  solveState.pb      = null;
+  s1State.correct    = {};
+  solveState.eqPrice     = null;
+  solveState.eqQty       = null;
+  solveState.eqPriceOld  = null;
+  solveState.eqQtyOld    = null;
+  solveState.cb          = null;
+  solveState.pb          = null;
+  solveState.taxRevenue  = null;
+  solveState.newTotalRev = null;
+  solveState.elasticity  = null;
+  solveState.totalCB     = null;
+  solveState.stage2Score = 0;
   buildS1Gate(num);
+}
+
+// ── Phase badge helper ────────────────────────────────────────────────────
+function setPhaseBadge(id, num) {
+  const el = document.getElementById(id);
+  el.textContent = `ENG. ${num}`;
+  el.className   = `phase-badge phase-badge-${num}`;
 }
 
 // ── S1 Gate ───────────────────────────────────────────────────────────────
 function buildS1Gate(num) {
   const phase = PHASES[num];
 
-  const badge = document.getElementById('s1-phase-badge');
-  badge.textContent = `PHASE ${num}`;
-  badge.className   = `phase-badge phase-badge-${num}`;
+  setPhaseBadge('s1-phase-badge', num);
 
-  // Clean up any Phase 3 qty-form injected by a previous run
   const oldForm = document.getElementById('phase3-qty-form');
   if (oldForm) oldForm.remove();
 
@@ -182,18 +235,24 @@ function buildS1Gate(num) {
   }
 
   showScreen('screen-s1gate');
+  startTimer('timer-s1', () => {
+    // Freeze all inputs; force-enable the proceed button
+    document.querySelectorAll('#screen-s1gate input, #screen-s1gate select')
+      .forEach(el => { el.disabled = true; });
+    const btn = document.getElementById('btn-s1-unlock');
+    if (btn) btn.disabled = false;
+  });
 }
 
-// Phase 1 & 2: fill in New Qty Supplied column
+// Engagements 1 & 2: fill in New Qty Supplied column
 function buildSupplyShiftGate(num, phase) {
   document.querySelector('#s1-table thead').innerHTML = `
     <tr>
       <th>Price ($)</th><th>Qd</th><th>Original Qs</th><th>New Qty Supplied</th>
     </tr>`;
 
-  const taxLabel = phase.taxLabel || `$${phase.tax} per unit tax on producers`;
   document.getElementById('s1-instruction').textContent =
-    `The government imposes a ${taxLabel}. ` +
+    `The government imposes a ${phase.taxLabel}. ` +
     `Supply decreases. For each price, find the quantity supplied at the ` +
     `seller's net price (price − $${phase.tax}). ` +
     `If that price is not shown in the table, enter /.`;
@@ -243,7 +302,7 @@ function buildSupplyShiftGate(num, phase) {
   freshBtn.addEventListener('click', onS1Unlock, { once: true });
 }
 
-// Phase 3: demand-only — students identify old and new equilibrium quantities
+// Engagement 3: demand-only — students identify old and new equilibrium quantities
 function buildDemandOnlyGate(num, phase) {
   document.querySelector('#s1-table thead').innerHTML =
     '<tr><th>Price ($)</th><th>Qd</th></tr>';
@@ -302,8 +361,10 @@ function buildDemandOnlyGate(num, phase) {
   document.getElementById('sel-new-qty').addEventListener('change', checkDemandGate);
 
   freshBtn.addEventListener('click', async () => {
-    solveState.eqPrice = phase.newEqPrice;
-    solveState.eqQty   = phase.newEqQty;
+    solveState.eqPrice    = phase.newEqPrice;
+    solveState.eqQty      = phase.newEqQty;
+    solveState.eqPriceOld = phase.oldEqPrice;
+    solveState.eqQtyOld   = phase.oldEqQty;
     await set(ref(db, `pairs/${pairId}/phase${num}/s1Complete`), true);
     buildSolveScreen(num);
   }, { once: true });
@@ -384,146 +445,312 @@ function buildScheduleTableHTML(num) {
   return html;
 }
 
-// ── Solve screen ──────────────────────────────────────────────────────────
+// ── Solve screen (Stage 2 — Payload Loading) ──────────────────────────────
 function buildSolveScreen(num) {
   const phase = PHASES[num];
 
-  const badge = document.getElementById('solve-phase-badge');
-  badge.textContent = `PHASE ${num}`;
-  badge.className   = `phase-badge phase-badge-${num}`;
+  setPhaseBadge('solve-phase-badge', num);
 
   const tableBlock = `
-    <div class="table-scroll" style="margin-bottom:20px">
+    <div class="table-scroll" style="margin-bottom:14px">
       ${buildScheduleTableHTML(num)}
     </div>`;
 
-  const cbBlock = `
-    <div class="form-group">
-      <label for="input-cb">Consumer burden per unit ($)</label>
-      <p class="hint-text">Consumer burden = New price − $${phase.oldEqPrice} (old equilibrium price)</p>
-      <input type="number" id="input-cb" min="0" max="${phase.tax}" step="1"
-             placeholder="Enter a whole number">
-    </div>
-    <div id="burden-confirm" class="burden-confirm hidden"></div>
-    <button id="btn-solve-submit" class="btn btn-primary" disabled>CONFIRM →</button>`;
+  // Build ammo header
+  const ammoCnt    = 10;
+  const autoAmmo   = (phase.phaseType === 'demand-only') ? 5 : 0;
+  const circlesHTML = Array.from({ length: ammoCnt }, (_, i) =>
+    `<div class="ammo-circle${i < autoAmmo ? ' auto' : ''}" id="ammo-${i}"></div>`
+  ).join('');
+
+  const ammoHeader = `
+    <div class="ammo-header">
+      <div class="ammo-row">${circlesHTML}</div>
+      <div class="ammo-count" id="ammo-count">AMMO: ${autoAmmo} / 10</div>
+    </div>`;
 
   if (phase.phaseType === 'demand-only') {
-    // Eq P and Q already known from gate — just confirm CB
+    // P₁, Q₁, P₂, Q₂, t shown as pre-filled (auto-ammo)
+    // Students enter: t, Tax revenue, NTR, Elasticity, CB total, CB per unit
+    // (t is trivial but still an input for consistency)
     document.getElementById('solve-form-container').innerHTML =
       tableBlock +
       `<div class="info-box">
         Old equilibrium: P = $${phase.oldEqPrice}, Q = ${phase.oldEqQty}<br>
         New equilibrium: P = $${phase.newEqPrice}, Q = ${phase.newEqQty}<br>
-        Tax: $${phase.tax}
+        Unit tax: $${phase.tax}
+        <br><small style="color:#64748b">P₁, Q₁, P₂, Q₂, and t verified — 5 ammo pre-loaded</small>
       </div>` +
-      cbBlock;
+      ammoHeader +
+      buildActiveFields(phase, true) +
+      `<button id="btn-solve-submit" class="btn btn-primary">FIRE (${autoAmmo}/10) →</button>`;
   } else {
     document.getElementById('solve-form-container').innerHTML =
       tableBlock +
-      `<div class="form-group">
-        <label for="sel-eq-price">New equilibrium price ($)</label>
-        <select id="sel-eq-price">
-          <option value="">— Select —</option>
-          ${phase.eqPriceOptions.map(v => `<option value="${v}">$${v}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="sel-eq-qty">New equilibrium quantity</label>
-        <select id="sel-eq-qty">
-          <option value="">— Select —</option>
-          ${phase.eqQtyOptions.map(v => `<option value="${v}">${v}</option>`).join('')}
-        </select>
-      </div>` +
-      cbBlock;
-
-    document.getElementById('sel-eq-price').addEventListener('change', validateSolve);
-    document.getElementById('sel-eq-qty').addEventListener('change', validateSolve);
+      ammoHeader +
+      buildActiveFields(phase, false) +
+      `<button id="btn-solve-submit" class="btn btn-primary">FIRE (0/10) →</button>`;
   }
 
-  document.getElementById('input-cb').addEventListener('input', validateSolve);
-  document.getElementById('btn-solve-submit').addEventListener('click', onSolveConfirm, { once: true });
+  // Initialise ammo state and attach listeners
+  initAmmoSystem(num, phase.phaseType === 'demand-only');
 
   showScreen('screen-solve');
+  startTimer('timer-solve', () => {
+    document.querySelectorAll('#screen-solve input, #screen-solve select')
+      .forEach(el => { el.disabled = true; });
+    document.getElementById('btn-solve-submit').disabled = false;
+  });
 }
 
-function validateSolve() {
-  const phase   = PHASES[currentPhaseNum];
-  const cbRaw   = document.getElementById('input-cb').value.trim();
-  const cbVal   = parseInt(cbRaw);
-  const confirm = document.getElementById('burden-confirm');
-  const btn     = document.getElementById('btn-solve-submit');
+// Build the 10-field worksheet
+// demand3 = true means P₁/Q₁/P₂/Q₂/t are pre-filled; only 5 active inputs
+function buildActiveFields(phase, demand3) {
+  const priceOpts = (phase.eqPriceOptions || []).map(v =>
+    `<option value="${v}">$${v}</option>`).join('');
+  const qtyOpts   = (phase.eqQtyOptions   || []).map(v =>
+    `<option value="${v}">${v}</option>`).join('');
 
-  let priceOk = true, qtyOk = true;
+  const elasticityOpts = `
+    <option value="">— Select —</option>
+    <option value="elastic">Elastic</option>
+    <option value="unit">Unit Elastic</option>
+    <option value="inelastic">Inelastic</option>`;
 
-  if (phase.phaseType !== 'demand-only') {
-    const eqPriceEl = document.getElementById('sel-eq-price');
-    const eqQtyEl   = document.getElementById('sel-eq-qty');
-    const eqPrice   = parseInt(eqPriceEl.value);
-    const eqQty     = parseInt(eqQtyEl.value);
-    priceOk = !isNaN(eqPrice) && eqPrice === phase.newEqPrice;
-    qtyOk   = !isNaN(eqQty)   && eqQty   === phase.newEqQty;
-    eqPriceEl.classList.toggle('field-wrong', eqPriceEl.value !== '' && !priceOk);
-    eqQtyEl.classList.toggle('field-wrong',   eqQtyEl.value   !== '' && !qtyOk);
+  if (demand3) {
+    // 5 active inputs (circles 5–9)
+    return `
+      <div class="form-group">
+        <label>⑥ Tax revenue (t × Q₂)</label>
+        <input type="number" id="s2-taxrev" min="0" step="1" placeholder="e.g. ${phase.tax * phase.newEqQty}">
+      </div>
+      <div class="form-group">
+        <label>⑦ New total revenue (P₂ × Q₂)</label>
+        <input type="number" id="s2-ntr" min="0" step="1" placeholder="e.g. ${phase.newEqPrice * phase.newEqQty}">
+      </div>
+      <div class="form-group">
+        <label>⑧ Elasticity of demand</label>
+        <select id="s2-elas">${elasticityOpts}</select>
+      </div>
+      <div class="form-group">
+        <label>⑨ Consumer burden — total (CB × Q₂)</label>
+        <input type="number" id="s2-cbtot" min="0" step="1" placeholder="e.g. ${phase.consumerBurden * phase.newEqQty}">
+      </div>
+      <div class="form-group">
+        <label>⑩ Consumer burden — per unit (P₂ − P₁)</label>
+        <input type="number" id="s2-cbunit" min="0" step="1" placeholder="e.g. ${phase.consumerBurden}">
+      </div>`;
   }
 
-  if (cbRaw === '' || isNaN(cbVal) || cbVal < 0 || cbVal > phase.tax) {
-    confirm.className = 'burden-confirm hidden';
-    btn.disabled = true;
-    return;
-  }
+  // 10 active inputs
+  return `
+    <div class="form-group">
+      <label>① Old equilibrium price (P₁)</label>
+      <select id="s2-p1">
+        <option value="">— Select —</option>
+        ${priceOpts}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>② Old equilibrium quantity (Q₁)</label>
+      <select id="s2-q1">
+        <option value="">— Select —</option>
+        ${qtyOpts}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>③ New equilibrium price (P₂)</label>
+      <select id="s2-p2">
+        <option value="">— Select —</option>
+        ${priceOpts}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>④ New equilibrium quantity (Q₂)</label>
+      <select id="s2-q2">
+        <option value="">— Select —</option>
+        ${qtyOpts}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>⑤ Unit tax (t) — given</label>
+      <input type="number" id="s2-t" min="0" step="1" placeholder="Enter the given tax amount">
+    </div>
+    <div class="form-group">
+      <label>⑥ Tax revenue (t × Q₂)</label>
+      <input type="number" id="s2-taxrev" min="0" step="1">
+    </div>
+    <div class="form-group">
+      <label>⑦ New total revenue (P₂ × Q₂)</label>
+      <input type="number" id="s2-ntr" min="0" step="1">
+    </div>
+    <div class="form-group">
+      <label>⑧ Elasticity of demand</label>
+      <select id="s2-elas">${elasticityOpts}</select>
+    </div>
+    <div class="form-group">
+      <label>⑨ Consumer burden — total (CB × Q₂)</label>
+      <input type="number" id="s2-cbtot" min="0" step="1">
+    </div>
+    <div class="form-group">
+      <label>⑩ Consumer burden — per unit (P₂ − P₁)</label>
+      <input type="number" id="s2-cbunit" min="0" step="1">
+    </div>`;
+}
 
-  const pb   = phase.tax - cbVal;
-  const cbOk = cbVal === phase.consumerBurden;
+// ── Ammo system ───────────────────────────────────────────────────────────
+// ammoMap: array of { id, expected, circleIdx }
+let ammoMap = [];
 
-  if (cbOk) {
-    confirm.textContent = `CB $${cbVal} + PB $${pb} = Tax $${phase.tax} ✓`;
-    confirm.className   = 'burden-confirm burden-correct';
-    solveState.cb = cbVal;
-    solveState.pb = pb;
+function initAmmoSystem(num, demand3) {
+  const phase = PHASES[num];
+  ammoMap     = [];
+
+  if (demand3) {
+    // 5 auto-correct circles (0–4), 5 active (5–9)
+    // Circle indices 5–9 map to fields 6–10
+    ammoMap = [
+      { id: 's2-taxrev', expected: phase.tax * phase.newEqQty,           circleIdx: 5, type: 'number' },
+      { id: 's2-ntr',    expected: phase.newEqPrice * phase.newEqQty,    circleIdx: 6, type: 'number' },
+      { id: 's2-elas',   expected: phase.correctElasticity,               circleIdx: 7, type: 'select' },
+      { id: 's2-cbtot',  expected: phase.consumerBurden * phase.newEqQty,circleIdx: 8, type: 'number' },
+      { id: 's2-cbunit', expected: phase.consumerBurden,                  circleIdx: 9, type: 'number' },
+    ];
   } else {
-    confirm.textContent = `CB $${cbVal} + PB $${pb} = Tax $${phase.tax} — check your calculation`;
-    confirm.className   = 'burden-confirm burden-wrong';
+    ammoMap = [
+      { id: 's2-p1',     expected: phase.oldEqPrice,                      circleIdx: 0, type: 'select' },
+      { id: 's2-q1',     expected: phase.oldEqQty,                        circleIdx: 1, type: 'select' },
+      { id: 's2-p2',     expected: phase.newEqPrice,                      circleIdx: 2, type: 'select' },
+      { id: 's2-q2',     expected: phase.newEqQty,                        circleIdx: 3, type: 'select' },
+      { id: 's2-t',      expected: phase.tax,                              circleIdx: 4, type: 'number' },
+      { id: 's2-taxrev', expected: phase.tax * phase.newEqQty,            circleIdx: 5, type: 'number' },
+      { id: 's2-ntr',    expected: phase.newEqPrice * phase.newEqQty,     circleIdx: 6, type: 'number' },
+      { id: 's2-elas',   expected: phase.correctElasticity,                circleIdx: 7, type: 'select' },
+      { id: 's2-cbtot',  expected: phase.consumerBurden * phase.newEqQty, circleIdx: 8, type: 'number' },
+      { id: 's2-cbunit', expected: phase.consumerBurden,                   circleIdx: 9, type: 'number' },
+    ];
   }
 
-  btn.disabled = !(priceOk && qtyOk && cbOk);
+  const autoAmmo = demand3 ? 5 : 0;
+  updateAmmoDisplay(autoAmmo);
+
+  ammoMap.forEach(({ id, type }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener(type === 'select' ? 'change' : 'input', checkAmmo);
+  });
+
+  document.getElementById('btn-solve-submit')
+    .addEventListener('click', onSolveConfirm, { once: true });
+}
+
+function checkAmmo() {
+  const phase   = PHASES[currentPhaseNum];
+  const demand3 = phase.phaseType === 'demand-only';
+  const autoAmmo = demand3 ? 5 : 0;
+
+  ammoMap.forEach(({ id, expected, circleIdx, type }) => {
+    const el  = document.getElementById(id);
+    if (!el) return;
+    const val = type === 'select' ? el.value : parseInt(el.value);
+    const ok  = type === 'select' ? val === String(expected) : val === expected;
+    const circle = document.getElementById(`ammo-${circleIdx}`);
+    if (!circle) return;
+    if (el.value === '' || (type !== 'select' && isNaN(val))) {
+      circle.className = 'ammo-circle';
+    } else {
+      circle.className = ok ? 'ammo-circle correct' : 'ammo-circle wrong';
+    }
+  });
+
+  updateAmmoDisplay(autoAmmo);
+}
+
+function updateAmmoDisplay(autoAmmo) {
+  // Count green circles
+  let green = autoAmmo;   // auto circles are always green
+  ammoMap.forEach(({ id, expected, type }) => {
+    const el  = document.getElementById(id);
+    if (!el) return;
+    const val = type === 'select' ? el.value : parseInt(el.value);
+    const ok  = type === 'select' ? val === String(expected) : val === expected;
+    if (ok) green++;
+  });
+
+  solveState.stage2Score = green;
+
+  const countEl = document.getElementById('ammo-count');
+  if (countEl) countEl.textContent = `AMMO: ${green} / 10`;
+  const fireBtn = document.getElementById('btn-solve-submit');
+  if (fireBtn) fireBtn.textContent = `FIRE (${green}/10) →`;
 }
 
 function onSolveConfirm() {
-  if (PHASES[currentPhaseNum].phaseType !== 'demand-only') {
-    solveState.eqPrice = parseInt(document.getElementById('sel-eq-price').value);
-    solveState.eqQty   = parseInt(document.getElementById('sel-eq-qty').value);
+  const phase   = PHASES[currentPhaseNum];
+  const demand3 = phase.phaseType === 'demand-only';
+
+  if (demand3) {
+    // P₁/Q₁/P₂/Q₂ already set from gate
+    solveState.eqPriceOld = phase.oldEqPrice;
+    solveState.eqQtyOld   = phase.oldEqQty;
+    solveState.eqPrice    = phase.newEqPrice;
+    solveState.eqQty      = phase.newEqQty;
+  } else {
+    solveState.eqPriceOld = parseInt(document.getElementById('s2-p1')?.value);
+    solveState.eqQtyOld   = parseInt(document.getElementById('s2-q1')?.value);
+    solveState.eqPrice    = parseInt(document.getElementById('s2-p2')?.value);
+    solveState.eqQty      = parseInt(document.getElementById('s2-q2')?.value);
   }
-  // demand-only: eqPrice/eqQty already set in buildDemandOnlyGate
+
+  solveState.taxRevenue  = parseInt(document.getElementById('s2-taxrev')?.value);
+  solveState.newTotalRev = parseInt(document.getElementById('s2-ntr')?.value);
+  solveState.elasticity  = document.getElementById('s2-elas')?.value;
+  solveState.totalCB     = parseInt(document.getElementById('s2-cbtot')?.value);
+  solveState.cb          = parseInt(document.getElementById('s2-cbunit')?.value);
+  solveState.pb          = isNaN(solveState.cb) ? null : phase.tax - solveState.cb;
+
   buildTargetScreen(currentPhaseNum);
 }
 
-// ── Target screen ─────────────────────────────────────────────────────────
+// ── Target screen (Stage 3 — Target Selection) ────────────────────────────
 function buildTargetScreen(num) {
-  const badge = document.getElementById('target-phase-badge');
-  badge.textContent = `PHASE ${num}`;
-  badge.className   = `phase-badge phase-badge-${num}`;
+  setPhaseBadge('target-phase-badge', num);
 
-  const btnC = document.getElementById('btn-consumer');
-  const btnP = document.getElementById('btn-producer');
-  btnC.disabled = false;
-  btnP.disabled = false;
-  btnC.onclick  = () => onTargetSelect('consumer');
-  btnP.onclick  = () => onTargetSelect('producer');
+  const btnCore = document.getElementById('btn-core');
+  const btnBody = document.getElementById('btn-body');
+  const btnRear = document.getElementById('btn-rear');
+
+  btnCore.disabled = false;
+  btnBody.disabled = false;
+  btnRear.disabled = false;
+  btnCore.onclick  = () => onTargetSelect('core');
+  btnBody.onclick  = () => onTargetSelect('body');
+  btnRear.onclick  = () => onTargetSelect('rear');
 
   showScreen('screen-target');
+  startTimer('timer-target', () => {
+    // No inputs to freeze; buttons stay available
+  });
 }
 
 async function onTargetSelect(target) {
-  document.getElementById('btn-consumer').disabled = true;
-  document.getElementById('btn-producer').disabled = true;
+  document.getElementById('btn-core').disabled = true;
+  document.getElementById('btn-body').disabled = true;
+  document.getElementById('btn-rear').disabled = true;
 
   const phase = PHASES[currentPhaseNum];
   const data  = {
     s1Complete:     true,
-    eqPrice:        solveState.eqPrice,
-    eqQty:          solveState.eqQty,
-    consumerBurden: solveState.cb,
-    producerBurden: solveState.pb,
+    eqPriceOld:     isNaN(solveState.eqPriceOld) ? null : solveState.eqPriceOld,
+    eqQtyOld:       isNaN(solveState.eqQtyOld)   ? null : solveState.eqQtyOld,
+    eqPrice:        isNaN(solveState.eqPrice)     ? null : solveState.eqPrice,
+    eqQty:          isNaN(solveState.eqQty)       ? null : solveState.eqQty,
+    consumerBurden: isNaN(solveState.cb)          ? null : solveState.cb,
+    producerBurden: isNaN(solveState.pb)          ? null : solveState.pb,
+    taxRevenue:     isNaN(solveState.taxRevenue)  ? null : solveState.taxRevenue,
+    newTotalRev:    isNaN(solveState.newTotalRev) ? null : solveState.newTotalRev,
+    elasticity:     solveState.elasticity || null,
+    stage2Score:    solveState.stage2Score,
     target,
     targetCorrect:  target === phase.correctTarget,
     submitted:      true,
@@ -535,13 +762,21 @@ async function onTargetSelect(target) {
 
 // ── Locked screen ─────────────────────────────────────────────────────────
 function showLocked(phaseNum) {
-  const el = document.getElementById('locked-summary');
-  if (solveState.cb !== null) {
-    el.textContent =
-      `Phase ${phaseNum} · New Eq: P=$${solveState.eqPrice} Q=${solveState.eqQty} · ` +
-      `CB $${solveState.cb} + PB $${solveState.pb} = Tax $${PHASES[phaseNum].tax}`;
-  } else {
-    el.textContent = `Phase ${phaseNum} submitted.`;
+  const phase = PHASES[phaseNum];
+  const el    = document.getElementById('locked-summary');
+  const score = solveState.stage2Score;
+  const cb    = solveState.cb;
+  const pb    = solveState.pb;
+
+  let summary = `Engagement ${phaseNum}`;
+  if (!isNaN(solveState.eqPrice)) {
+    summary += ` · New Eq: P=$${solveState.eqPrice} Q=${solveState.eqQty}`;
   }
+  if (!isNaN(cb)) {
+    summary += ` · CB $${cb} + PB $${pb} = Tax $${phase.tax}`;
+  }
+  summary += ` · Ammo: ${score}/10`;
+
+  el.textContent = summary;
   showScreen('screen-locked');
 }
