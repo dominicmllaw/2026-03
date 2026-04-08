@@ -61,7 +61,7 @@ export const PHASES = {
     consumerBurden:  1,
     producerBurden:  1,
     correctTarget:   'core',       // Ed = Es → Core Unit (中枢部)
-    correctElasticity: 'unit',
+    correctElasticity: 'elastic',
     eqPriceOptions:  [1, 2, 3, 4, 5, 6, 7],
     eqQtyOptions:    [10, 15, 20, 25, 30, 35, 40, 45, 50],
   },

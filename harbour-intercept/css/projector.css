@@ -161,51 +161,96 @@ html, body {
   letter-spacing: 0.08em;
 }
 
-/* best pilots */
-.best-pilots-list {
+/* ── Podium (best pilots) ────────────────────────────────────────────────── */
+.podium {
   display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: flex-end;
   justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.best-pilot-card {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid #334155;
-  border-radius: 10px;
-  padding: 16px 22px;
-  min-width: 150px;
+.podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 130px;
+  max-width: 180px;
 }
 
-.best-pilot-pair {
-  font-size: 0.68rem;
+.podium-names-area {
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.podium-pair-label {
+  font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.2em;
   color: var(--muted);
   text-transform: uppercase;
-  margin-bottom: 6px;
 }
 
-.best-pilot-names {
-  font-size: 0.9rem;
+.podium-pair-name {
+  font-size: 0.8rem;
   font-weight: 700;
   color: #e2e8f0;
   line-height: 1.4;
-  margin-bottom: 10px;
 }
 
-.best-pilot-score {
-  font-size: 2.2rem;
+.podium-pedestal {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  gap: 4px;
+}
+
+.podium-rank-1 .podium-pedestal {
+  height: 110px;
+  background: #3a2e00;
+  border: 2px solid #ffd700;
+}
+
+.podium-rank-2 .podium-pedestal {
+  height: 80px;
+  background: #2a2a2a;
+  border: 2px solid #c0c0c0;
+}
+
+.podium-rank-3 .podium-pedestal {
+  height: 60px;
+  background: #2d1a0a;
+  border: 2px solid #cd7f32;
+}
+
+.podium-rank-label {
+  font-size: 0.7rem;
   font-weight: 900;
-  color: #4ade80;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.podium-rank-1 .podium-rank-label { color: #ffd700; }
+.podium-rank-2 .podium-rank-label { color: #c0c0c0; }
+.podium-rank-3 .podium-rank-label { color: #cd7f32; }
+
+.podium-score {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fff;
   line-height: 1;
 }
 
-.best-pilot-label {
-  font-size: 0.72rem;
+.podium-score-label {
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  vertical-align: middle;
+  letter-spacing: 0.1em;
+  color: var(--muted);
 }
 
 #endgame-title {
@@ -348,6 +393,62 @@ html, body {
 
 body.eva-alert #eva-overlay {
   animation: eva-blink 1.6s ease-in-out infinite;
+}
+
+/* ── Impact effects (ammo hits Angel) ───────────────────────────────────── */
+#boss-display {
+  position: relative;
+}
+
+#impact-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.08s ease-out;
+}
+
+#impact-flash.impact-flash-active {
+  opacity: 0.82;
+}
+
+@keyframes boss-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-10px); }
+  40%       { transform: translateX(10px); }
+  60%       { transform: translateX(-7px); }
+  80%       { transform: translateX(7px); }
+}
+
+#boss-display.boss-shaking {
+  animation: boss-shake 0.5s ease-in-out;
+}
+
+@keyframes damage-float {
+  0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80%  { opacity: 1; transform: translateX(-50%) translateY(-55px); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-75px); }
+}
+
+#damage-popup {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  transform: translateX(-50%);
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: #ff3333;
+  text-shadow: 0 0 14px #ff0000, 0 0 4px #000;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 260;
+  white-space: nowrap;
+}
+
+#damage-popup.active {
+  animation: damage-float 1.8s ease-out forwards;
 }
 
 /* ── Teacher control panel ───────────────────────────────────────────────── */

@@ -199,9 +199,20 @@ function showRevealResults() {
   const result = computeResult();
   if (!result) return;
 
+  // Compute damage dealt in this phase before updating bar
+  let phaseDamage = 0;
+  Object.values(pairsData).forEach(pair => {
+    const p = pair[currentPhase];
+    if (p?.targetCorrect === true) phaseDamage += (p.stage2Score ?? 0);
+  });
+
   updateResultDisplay();
   updateHPBar();
   updateAmmoTable();
+
+  if (phaseDamage > 0) {
+    triggerImpactEffect(phaseDamage);
+  }
 
   if (!result.majorityCorrect) {
     bossRetaliate();
@@ -209,6 +220,40 @@ function showRevealResults() {
 
   if (currentPhase === 'phase3') {
     setTimeout(checkEndGame, 2500);
+  }
+}
+
+function triggerImpactEffect(damage) {
+  const flash  = document.getElementById('impact-flash');
+  const boss   = document.getElementById('boss-display');
+  const popup  = document.getElementById('damage-popup');
+
+  // White flash
+  if (flash) {
+    flash.classList.add('impact-flash-active');
+    setTimeout(() => flash.classList.remove('impact-flash-active'), 300);
+  }
+
+  // Boss shake (slight delay so flash hits first)
+  if (boss) {
+    setTimeout(() => {
+      boss.classList.add('boss-shaking');
+      setTimeout(() => boss.classList.remove('boss-shaking'), 600);
+    }, 150);
+  }
+
+  // Floating damage number
+  if (popup) {
+    setTimeout(() => {
+      popup.textContent = `−${damage} HP`;
+      popup.classList.remove('active');
+      void popup.offsetWidth; // reflow to restart animation
+      popup.classList.add('active');
+      setTimeout(() => {
+        popup.classList.remove('active');
+        popup.textContent = '';
+      }, 2000);
+    }, 200);
   }
 }
 
@@ -338,23 +383,50 @@ function renderBestPilots() {
     };
   });
 
-  if (scores.length === 0) { section.classList.add('hidden'); return; }
+  const withHits = scores.filter(s => s.totalHit > 0)
+    .sort((a, b) => b.totalHit - a.totalHit);
 
-  const maxHit = Math.max(...scores.map(s => s.totalHit));
-  if (maxHit <= 0)          { section.classList.add('hidden'); return; }
+  if (withHits.length === 0) { section.classList.add('hidden'); return; }
 
-  const best = scores.filter(s => s.totalHit === maxHit);
+  // Up to 3 distinct score values → rank groups
+  const distinctScores = [...new Set(withHits.map(s => s.totalHit))].slice(0, 3);
+  const rankGroups     = distinctScores.map(score =>
+    withHits.filter(s => s.totalHit === score)
+  );
+  // rankGroups[0]=rank1, [1]=rank2, [2]=rank3
 
+  const rankLabels = ['1ST', '2ND', '3RD'];
+
+  function renderSlot(rankIdx) {
+    const group = rankGroups[rankIdx];
+    if (!group || group.length === 0) return '';
+    const score    = group[0].totalHit;
+    const label    = rankLabels[rankIdx];
+    const cssClass = `podium-rank-${rankIdx + 1}`;
+    const namesHtml = group.map(p => `
+      <div class="podium-pair-label">PAIR ${p.num}</div>
+      <div class="podium-pair-name">${p.name1}${p.name2 ? '<br>' + p.name2 : ''}</div>`
+    ).join('<hr style="border-color:#334155;margin:6px 0;">');
+
+    return `
+      <div class="podium-slot ${cssClass}">
+        <div class="podium-names-area">${namesHtml}</div>
+        <div class="podium-pedestal">
+          <div class="podium-rank-label">${label}</div>
+          <div class="podium-score">${score}</div>
+          <div class="podium-score-label">HIT</div>
+        </div>
+      </div>`;
+  }
+
+  // DOM order: rank2 (left), rank1 (centre), rank3 (right)
   section.classList.remove('hidden');
   section.innerHTML = `
-    <div class="eg-section-title">BEST PILOT${best.length > 1 ? 'S' : ''}</div>
-    <div class="best-pilots-list">
-      ${best.map(p => `
-        <div class="best-pilot-card">
-          <div class="best-pilot-pair">PAIR ${p.num}</div>
-          <div class="best-pilot-names">${p.name1}${p.name2 ? '<br>' + p.name2 : ''}</div>
-          <div class="best-pilot-score">${maxHit}<span class="best-pilot-label"> HIT</span></div>
-        </div>`).join('')}
+    <div class="eg-section-title">BEST PILOTS</div>
+    <div class="podium">
+      ${renderSlot(1)}
+      ${renderSlot(0)}
+      ${renderSlot(2)}
     </div>`;
 }
 
