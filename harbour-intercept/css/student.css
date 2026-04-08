@@ -445,13 +445,22 @@ select option { background: #1e293b; }
 .btn-raid { padding: 12px; font-size: 0.88rem; }
 
 /* ── EVA Alert — last 15 seconds ─────────────────────────────────────────── */
-@keyframes eva-pulse {
-  0%, 100% { background-color: var(--bg); }
-  50%       { background-color: rgba(220, 38, 38, 0.2); }
+#eva-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 900;
+  background: rgba(220, 38, 38, 0.22);
+  opacity: 0;
 }
 
-body.eva-alert {
-  animation: eva-pulse 1.4s ease-in-out infinite;
+@keyframes eva-blink {
+  0%, 100% { opacity: 0; }
+  50%       { opacity: 1; }
+}
+
+body.eva-alert #eva-overlay {
+  animation: eva-blink 1.6s ease-in-out infinite;
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */

@@ -74,6 +74,10 @@ async function resetGame() {
   const eg = document.getElementById('endgame-overlay');
   eg.classList.add('hidden');
   eg.classList.remove('victory', 'defeat');
+  const egAmmo   = document.getElementById('endgame-ammo-summary');
+  const egPilots = document.getElementById('endgame-best-pilots');
+  if (egAmmo)   { egAmmo.classList.add('hidden');   egAmmo.innerHTML   = ''; }
+  if (egPilots) { egPilots.classList.add('hidden'); egPilots.innerHTML = ''; }
   document.getElementById('submission-counter').textContent = '';
   const ammoSection = document.getElementById('ammo-summary');
   if (ammoSection) { ammoSection.classList.add('hidden'); }
@@ -272,6 +276,86 @@ function checkEndGame() {
       `Angel survives with ${hp} HP. More pairs need to intercept correctly next time.`;
     overlay.classList.add('defeat');
   }
+
+  renderEndgameAmmoSummary();
+  renderBestPilots();
+}
+
+function renderEndgameAmmoSummary() {
+  const section  = document.getElementById('endgame-ammo-summary');
+  if (!section) return;
+
+  const revealed = [1, 2, 3].filter(n => revealedPhases[`phase${n}`]);
+  if (revealed.length === 0) { section.classList.add('hidden'); return; }
+
+  let rows = '';
+  revealed.forEach(n => {
+    let total = 0, hit = 0, missed = 0;
+    Object.values(pairsData).forEach(pair => {
+      const p     = pair[`phase${n}`];
+      if (!p) return;
+      const score = p.stage2Score ?? 0;
+      total += score;
+      if (p.targetCorrect) hit    += score;
+      else                  missed += score;
+    });
+    rows += `<tr>
+      <td>ENG. ${n}</td>
+      <td>${total}</td>
+      <td class="ammo-hit">${hit}</td>
+      <td class="ammo-miss">${missed}</td>
+    </tr>`;
+  });
+
+  section.classList.remove('hidden');
+  section.innerHTML = `
+    <div class="eg-section-title">AMMO SUMMARY</div>
+    <table class="eg-ammo-table">
+      <thead><tr>
+        <th>Engagement</th><th>Total</th><th>HIT</th><th>MISSED</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderBestPilots() {
+  const section = document.getElementById('endgame-best-pilots');
+  if (!section) return;
+
+  // Sum hit ammo across all 3 engagements per pair
+  const scores = Object.entries(pairsData).map(([id, pair]) => {
+    let totalHit = 0;
+    [1, 2, 3].forEach(n => {
+      const p = pair[`phase${n}`];
+      if (p?.targetCorrect === true) totalHit += (p.stage2Score ?? 0);
+    });
+    return {
+      id,
+      num:   parseInt(id.replace('pair', '')),
+      name1: pair.name1 || '',
+      name2: (pair.name2 && pair.name2 !== '—') ? pair.name2 : null,
+      totalHit,
+    };
+  });
+
+  if (scores.length === 0) { section.classList.add('hidden'); return; }
+
+  const maxHit = Math.max(...scores.map(s => s.totalHit));
+  if (maxHit <= 0)          { section.classList.add('hidden'); return; }
+
+  const best = scores.filter(s => s.totalHit === maxHit);
+
+  section.classList.remove('hidden');
+  section.innerHTML = `
+    <div class="eg-section-title">BEST PILOT${best.length > 1 ? 'S' : ''}</div>
+    <div class="best-pilots-list">
+      ${best.map(p => `
+        <div class="best-pilot-card">
+          <div class="best-pilot-pair">PAIR ${p.num}</div>
+          <div class="best-pilot-names">${p.name1}${p.name2 ? '<br>' + p.name2 : ''}</div>
+          <div class="best-pilot-score">${maxHit}<span class="best-pilot-label"> HIT</span></div>
+        </div>`).join('')}
+    </div>`;
 }
 
 // ── Ammo summary table ────────────────────────────────────────────────────

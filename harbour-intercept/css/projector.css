@@ -109,14 +109,104 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
-  background: rgba(10, 15, 30, 0.94);
+  justify-content: flex-start;
+  gap: 16px;
+  background: rgba(10, 15, 30, 0.96);
   z-index: 300;
   text-align: center;
-  padding: 40px;
+  padding: 40px 40px 60px;
+  overflow-y: auto;
 }
 #endgame-overlay.hidden { display: none; }
+
+#endgame-ammo-summary.hidden,
+#endgame-best-pilots.hidden { display: none; }
+
+/* shared section heading */
+.eg-section-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* ammo table on end screen */
+.eg-ammo-table {
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  min-width: 300px;
+}
+.eg-ammo-table th {
+  padding: 5px 18px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #334155;
+  text-align: left;
+}
+.eg-ammo-table td {
+  padding: 7px 18px;
+  border-bottom: 1px solid #1e293b;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: left;
+}
+.eg-ammo-table td:first-child {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+/* best pilots */
+.best-pilots-list {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.best-pilot-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 16px 22px;
+  min-width: 150px;
+}
+
+.best-pilot-pair {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.best-pilot-names {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.best-pilot-score {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #4ade80;
+  line-height: 1;
+}
+
+.best-pilot-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  vertical-align: middle;
+}
 
 #endgame-title {
   font-size: 4rem;
@@ -242,13 +332,22 @@ html, body {
 }
 
 /* ── EVA Alert — last 15 seconds ─────────────────────────────────────────── */
-@keyframes eva-pulse {
-  0%, 100% { background-color: #0a0f1e; }
-  50%       { background-color: rgba(180, 0, 0, 0.38); }
+#eva-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;   /* above main display, below teacher panel (400) and endgame (300) */
+  background: rgba(200, 0, 0, 0.32);
+  opacity: 0;
 }
 
-body.eva-alert {
-  animation: eva-pulse 1.4s ease-in-out infinite;
+@keyframes eva-blink {
+  0%, 100% { opacity: 0; }
+  50%       { opacity: 1; }
+}
+
+body.eva-alert #eva-overlay {
+  animation: eva-blink 1.6s ease-in-out infinite;
 }
 
 /* ── Teacher control panel ───────────────────────────────────────────────── */

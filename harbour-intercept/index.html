@@ -108,13 +108,13 @@
       <p class="target-prompt">Identify the target section:</p>
       <div class="target-buttons">
         <button id="btn-core" class="btn btn-core btn-target">
-          CORE UNIT<br>中枢部<br><small>Ed = Es</small>
+          CORE UNIT<br>中枢部<br><small>Producer's burden = Consumer's burden</small>
         </button>
         <button id="btn-body" class="btn btn-body btn-target">
-          BODY ARMOUR<br>装甲部<br><small>Ed &gt; Es</small>
+          BODY ARMOUR<br>装甲部<br><small>Producer's burden &gt; Consumer's burden</small>
         </button>
         <button id="btn-rear" class="btn btn-rear btn-target">
-          REAR SECTION<br>後部区画<br><small>Ed &lt; Es</small>
+          REAR SECTION<br>後部区画<br><small>Producer's burden &lt; Consumer's burden</small>
         </button>
       </div>
     </div>
@@ -131,6 +131,9 @@
       <div id="locked-summary" class="locked-summary"></div>
     </div>
   </div>
+
+  <!-- EVA alert overlay — blinks red during last 15 s of any countdown -->
+  <div id="eva-overlay"></div>
 
   <script type="module" src="js/student.js"></script>
 </body>
