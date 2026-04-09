@@ -196,6 +196,27 @@ select option { background: #1e293b; }
 
 .table-scroll { overflow-x: auto; margin-bottom: 16px; }
 
+/* Stage 2 — given info banner */
+.s2-given-box {
+  background: rgba(250, 200, 80, 0.10);
+  border: 1px solid rgba(250, 200, 80, 0.35);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fde68a;
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+.s2-given-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: #fbbf24;
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+
 .schedule-table {
   width: 100%;
   border-collapse: collapse;

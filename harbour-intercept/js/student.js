@@ -3,6 +3,7 @@ import { db, ref, set, get, onValue } from './firebase-config.js';
 import { STUDENTS, PHASES } from './round-data.js';
 
 // ── Module-level state ────────────────────────────────────────────────────
+let takenNames      = new Set();   // names already registered in other pairs
 let pairId          = null;
 let currentPhaseNum = null;
 let gamePhase       = null;   // last-handled phase, avoids duplicate runs
@@ -103,6 +104,27 @@ function updateStandbyBadge() {
 }
 
 // ── Pair selection ────────────────────────────────────────────────────────
+function refreshNameDropdowns() {
+  const n1Sel = document.getElementById('name1-select');
+  const n2Sel = document.getElementById('name2-select');
+  if (!n1Sel || !n2Sel) return;
+  const selfChosen = n1Sel.value;
+  [n1Sel, n2Sel].forEach((sel, idx) => {
+    Array.from(sel.options).forEach(opt => {
+      if (opt.value === '' || opt.value === '—') return;
+      const takenByOther = takenNames.has(opt.value);
+      const isSelf       = (idx === 1 && opt.value === selfChosen);
+      opt.disabled = takenByOther || isSelf;
+    });
+  });
+  // Deselect any currently-selected value that is now disabled
+  [n1Sel, n2Sel].forEach(sel => {
+    const selected = sel.options[sel.selectedIndex];
+    if (selected && selected.disabled) sel.value = '';
+  });
+  checkEnterReady();
+}
+
 function initPairSelect() {
   const pairSel = document.getElementById('pair-select');
   for (let i = 1; i <= 16; i++) {
@@ -118,18 +140,26 @@ function initPairSelect() {
   n2Sel.appendChild(new Option('— (solo)', '—'));
   STUDENTS.forEach(name => n2Sel.appendChild(new Option(name, name)));
 
-  n1Sel.addEventListener('change', () => {
-    const chosen = n1Sel.value;
-    Array.from(n2Sel.options).forEach(opt => {
-      opt.disabled = (opt.value !== '—' && opt.value === chosen);
-    });
-    if (n2Sel.value === chosen) n2Sel.value = '';
-    checkEnterReady();
+  n1Sel.addEventListener('change', refreshNameDropdowns);
+  pairSel.addEventListener('change', () => {
+    // Re-compute taken names excluding the newly selected pair
+    refreshNameDropdowns();
   });
-
-  pairSel.addEventListener('change', checkEnterReady);
   n2Sel.addEventListener('change', checkEnterReady);
   document.getElementById('btn-enter').addEventListener('click', onPairEnter);
+
+  // Real-time listener: disable names already claimed by other pairs
+  onValue(ref(db, 'pairs'), snap => {
+    const data          = snap.val() || {};
+    const currentPairId = document.getElementById('pair-select').value;
+    takenNames          = new Set();
+    Object.entries(data).forEach(([pid, pair]) => {
+      if (pid === currentPairId) return;
+      if (pair.name1 && pair.name1 !== '—') takenNames.add(pair.name1);
+      if (pair.name2 && pair.name2 !== '—') takenNames.add(pair.name2);
+    });
+    refreshNameDropdowns();
+  });
 }
 
 function checkEnterReady() {
@@ -143,6 +173,18 @@ async function onPairEnter() {
   const id = document.getElementById('pair-select').value;
   const n1 = document.getElementById('name1-select').value;
   const n2 = document.getElementById('name2-select').value;
+
+  // Last-resort guard against race conditions
+  const snap    = await get(ref(db, 'pairs'));
+  const data    = snap.val() || {};
+  const claimed = Object.entries(data)
+    .filter(([pid]) => pid !== id)
+    .flatMap(([, pair]) => [pair.name1, pair.name2])
+    .filter(Boolean);
+  if (claimed.includes(n1) || (n2 !== '—' && claimed.includes(n2))) {
+    alert('One or both names are already registered in another pair. Please choose different names.');
+    return;
+  }
 
   pairId = id;
   localStorage.setItem('pairId', pairId);
@@ -460,6 +502,11 @@ function buildSolveScreen(num) {
       ${buildScheduleTableHTML(num)}
     </div>`;
 
+  const givenBox = `
+    <div class="s2-given-box">
+      <span class="s2-given-label">GIVEN</span>${phase.taxLabel}
+    </div>`;
+
   // All 10 ammo circles start empty for every engagement
   const ammoCnt    = 10;
   const circlesHTML = Array.from({ length: ammoCnt }, (_, i) =>
@@ -474,6 +521,7 @@ function buildSolveScreen(num) {
 
   document.getElementById('solve-form-container').innerHTML =
     tableBlock +
+    givenBox +
     ammoHeader +
     buildActiveFields(phase) +
     `<button id="btn-solve-submit" class="btn btn-primary">FIRE (0/10) →</button>`;
