@@ -451,6 +451,26 @@ body.eva-alert #eva-overlay {
   animation: damage-float 1.8s ease-out forwards;
 }
 
+/* ── Floating toggle button (for touch devices) ────────────────────────── */
+#btn-toggle-panel {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 500;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid #475569;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  line-height: 1;
+  backdrop-filter: blur(4px);
+}
+#btn-toggle-panel:hover { background: #334155; color: #fff; }
+
 /* ── Teacher control panel ───────────────────────────────────────────────── */
 #teacher-panel {
   position: fixed;

@@ -4,6 +4,7 @@ import { STUDENTS, PHASES } from './round-data.js';
 
 // ── Module-level state ────────────────────────────────────────────────────
 let takenNames      = new Set();   // names already registered in other pairs
+let takenPairs      = new Set();   // pair IDs already registered
 let pairId          = null;
 let currentPhaseNum = null;
 let gamePhase       = null;   // last-handled phase, avoids duplicate runs
@@ -104,6 +105,17 @@ function updateStandbyBadge() {
 }
 
 // ── Pair selection ────────────────────────────────────────────────────────
+function refreshPairDropdown() {
+  const pairSel = document.getElementById('pair-select');
+  if (!pairSel) return;
+  Array.from(pairSel.options).forEach(opt => {
+    if (opt.value === '') return;
+    opt.disabled = takenPairs.has(opt.value);
+  });
+  const selected = pairSel.options[pairSel.selectedIndex];
+  if (selected && selected.disabled) pairSel.value = '';
+}
+
 function refreshNameDropdowns() {
   const n1Sel = document.getElementById('name1-select');
   const n2Sel = document.getElementById('name2-select');
@@ -148,16 +160,22 @@ function initPairSelect() {
   n2Sel.addEventListener('change', checkEnterReady);
   document.getElementById('btn-enter').addEventListener('click', onPairEnter);
 
-  // Real-time listener: disable names already claimed by other pairs
+  // Real-time listener: disable pairs and names already claimed
   onValue(ref(db, 'pairs'), snap => {
     const data          = snap.val() || {};
     const currentPairId = document.getElementById('pair-select').value;
-    takenNames          = new Set();
+    takenNames = new Set();
+    takenPairs = new Set();
     Object.entries(data).forEach(([pid, pair]) => {
+      // A pair is "taken" if it has at least one registered name
+      if (pair.name1 && pair.name1 !== '—') {
+        takenPairs.add(pid);
+      }
       if (pid === currentPairId) return;
       if (pair.name1 && pair.name1 !== '—') takenNames.add(pair.name1);
       if (pair.name2 && pair.name2 !== '—') takenNames.add(pair.name2);
     });
+    refreshPairDropdown();
     refreshNameDropdowns();
   });
 }
@@ -177,6 +195,14 @@ async function onPairEnter() {
   // Last-resort guard against race conditions
   const snap    = await get(ref(db, 'pairs'));
   const data    = snap.val() || {};
+
+  // Check if this pair slot is already taken
+  const existingPair = data[id];
+  if (existingPair && existingPair.name1 && existingPair.name1 !== '—') {
+    alert(`Pair ${id.replace('pair', '')} is already registered. Please choose a different pair.`);
+    return;
+  }
+
   const claimed = Object.entries(data)
     .filter(([pid]) => pid !== id)
     .flatMap(([, pair]) => [pair.name1, pair.name2])

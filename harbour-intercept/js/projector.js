@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 't' || e.key === 'T') togglePanel();
   });
 
+  document.getElementById('btn-toggle-panel')
+    .addEventListener('click', togglePanel);
+
   updateHPBar();
 });
 
@@ -309,6 +312,9 @@ function checkEndGame() {
   const hp      = computeHP();
   const overlay = document.getElementById('endgame-overlay');
   overlay.classList.remove('hidden', 'victory', 'defeat');
+
+  // Auto-hide teacher panel so it doesn't overlap end screen
+  document.getElementById('teacher-panel').classList.add('hidden');
 
   if (hp <= 0) {
     document.getElementById('endgame-title').textContent    = 'ANGEL NEUTRALISED';
